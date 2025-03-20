@@ -1,4 +1,4 @@
-A.) Toolbox dependencies: 
+A.) **Toolbox dependencies:** 
   1. Optimization toolbox
   2. Econometrics toolbox
   3. Statistics and Machine Learning toolbox
