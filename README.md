@@ -18,3 +18,6 @@ cluster)._**
 
 go to HOME>parallel>preferences and change the number of workers. 
 Another solution is to comment out lines 221-222.
+
+C.) Replication of the paper results can be done with setting **_ndraws = 15000_**
+Computational time in a 
