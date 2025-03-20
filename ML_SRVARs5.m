@@ -22,7 +22,7 @@
 %
 %======================================================================
 %
-% Notes: The Code is based on 
+% Main citations: 
 % 
 % A.) Carriero, A., Clark T., Marcellino, M., Mertens, E.: 
 % Shadow-Rate VARs (2024)
