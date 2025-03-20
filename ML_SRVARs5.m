@@ -101,7 +101,7 @@ end
 
 ROLLING_WINDOW              = 0;                         % 1: Rolling window; 0: Expanding window
 NORMALIZE_DATA              = 0;                         % 1: Scale the Y ~ N(μ,σ^2) dataset to Z = (Y-μ)/σ ~ N(0,1)
-nloop                       = 3000;                     % no of draws
+nloop                       = 3000;                      % no of draws
 burnin                      = nloop/3;                   % no of burn-in draws
 elb_gibbs_burn              = 100;
 
