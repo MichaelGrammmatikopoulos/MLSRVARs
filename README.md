@@ -1,4 +1,10 @@
-The code has by default **_numWorkers = no_of_models;_**.
+A.) Toolbox dependencies: 
+  1. Optimization toolbox
+  2. Econometrics toolbox
+  3. Statistics and Machine Learning toolbox
+  4. Parallel computing toolbox
+  
+B.) The code has by default **_numWorkers = no_of_models;_**.
 If you get this error: 
 
 **_Error using parpool (line 133)
