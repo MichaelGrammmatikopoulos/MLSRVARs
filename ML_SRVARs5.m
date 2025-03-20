@@ -2,7 +2,7 @@
 %
 %          MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                        
 %
-%          Date : FEBRUARY, 2024
+%          Date : MARCH, 2025
 %
 %          Code Written By: Michael Grammatikopoulos    
 %                    email: Michael.Grammatikopoulos@moodys.com  
@@ -47,6 +47,7 @@
 % MLSRVARs Revision History:
 % Februray 27, 2024 - Version 1
 % September 1, 2024 - Version 2
+% March 20, 2025 - Version 3
 %======================================================================
 
 %% ===================== HOUSEKEEPING =====================
