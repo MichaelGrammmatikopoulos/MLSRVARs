@@ -1,7 +1,15 @@
-- MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                       
-- Code Written By: Michael Grammatikopoulos    
-            email: Michael.Grammatikopoulos@moodys.com  
-- 
+------------------------------------------------------------------------
+MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
+------------------------------------------------------------------------
+Code Written By: Michael Grammatikopoulos    
+            email: Michael.Grammatikopoulos@moodys.com
+------------------------------------------------------------------------
+This code comes without technical support of any kind.  It is expected 
+to reproduce the results reported in the paper. Under no circumstances 
+will the author be held responsible for any use (or misuse) of this code 
+in any way.
+------------------------------------------------------------------------
+
 A.) **Toolbox dependencies:** 
   1. Optimization toolbox
   2. Econometrics toolbox
