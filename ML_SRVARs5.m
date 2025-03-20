@@ -57,15 +57,15 @@ clearvars -global
 clear; clc;
 
 % Call the programs that loads raw data vintages
-cd_path = 'T:/PROJECTS/_MG_docs/MLSVARs/revision1';
+cd_path = 'YOURFOLDER/MLSVARs_main/';
 pathdata = [cd_path, '/data'];
 pathfunctions = [cd_path,'/matlab_codes/functions'];
 pathfunctions2 = [cd_path,'/matlab_codes/functions/export_fig'];
 addpath(pathdata);
 addpath(pathfunctions);
 addpath(pathfunctions2);
-addpath('C:\Program Files\MATLAB\R2023b\toolbox\econ\econ')
-addpath('T:\PROJECTS\_MG_docs\MLSVARs\revision1\data\WuXia')
+addpath('C:/Program Files/MATLAB/2023b/toolbox/econ/econ')
+addpath('YOURFOLDER/MLSVARs_main/data\WuXia')
 
 % Create SSP dataset
 make_ssp_dataset
