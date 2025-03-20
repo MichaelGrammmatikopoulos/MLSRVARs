@@ -9,6 +9,9 @@ to reproduce the results reported in the paper. Under no circumstances
 will the author be held responsible for any use (or misuse) of this code 
 in any way.
 ------------------------------------------------------------------------
+The views in this paper are solely of the author and do not represent 
+% the views of Moody's Analytics or the Moody’s Corporation
+------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 A.) **Toolbox dependencies** 
