@@ -1,11 +1,11 @@
-%======================================================================
+%=====================================================
 %
-%          MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                       
+% MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                       
 %
-%          Code Written By: Michael Grammatikopoulos    
-%                    email: Michael.Grammatikopoulos@moodys.com  
+% Code Written By: Michael Grammatikopoulos    
+%           email: Michael.Grammatikopoulos@moodys.com  
 %                           
-%======================================================================
+%=====================================================
 
 A.) **Toolbox dependencies:** 
   1. Optimization toolbox
