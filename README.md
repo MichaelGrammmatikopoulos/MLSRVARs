@@ -19,7 +19,7 @@ cluster)._**
 go to HOME>parallel>preferences and change the number of workers. 
 Another solution is to comment out lines 221-222.
 
-C.) Replication of the paper results can be done with setting **_ndraws = 15000_**
+C.) Replication of the paper results can be done with setting **_ndraws = 15000_**.
 Computational time in an AMD EPYC 7763 64-Core Processor, 2445 Mhz, 8 Core(s), 16 Logical Processor(s)
 is approximately 50 hours. 
  
