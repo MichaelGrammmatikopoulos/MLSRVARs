@@ -10,13 +10,20 @@ will the author be held responsible for any use (or misuse) of this code
 in any way.
 ------------------------------------------------------------------------
 
+------------------------------------------------------------------------
 A.) **Toolbox dependencies:** 
+------------------------------------------------------------------------
+
   1. Optimization toolbox
   2. Econometrics toolbox
   3. Statistics and Machine Learning toolbox
   4. Parallel computing toolbox
-  
-B.) The code has by default **_numWorkers = no_of_models;_**.
+
+------------------------------------------------------------------------
+B.) **Parallel computing settings**
+------------------------------------------------------------------------
+
+The code has by default **_numWorkers = no_of_models;_**.
 If you get this error: 
 
 **_Error using parpool (line 133)
@@ -31,6 +38,10 @@ cluster)._**
 go to HOME>parallel>preferences and change the number of workers. 
 Another solution is to comment out lines 221-222.
 
-C.) Replication of the paper results can be done with setting **_ndraws = 15000_**.
+------------------------------------------------------------------------
+C.) **Reproductibility / Computation time**
+------------------------------------------------------------------------
+
+Replication of the paper results can be done with setting **_ndraws = 15000_**.
 Computational time in an AMD EPYC 7763 64-Core Processor, 2445 Mhz, 8 Core(s), 16 Logical Processor(s)
 is approximately 50 hours. 
