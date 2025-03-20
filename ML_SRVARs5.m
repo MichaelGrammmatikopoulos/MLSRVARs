@@ -582,9 +582,9 @@ disp( ['All models` MCMCs took '  num2str( etime( clock, start_time_parfor) ) ' 
 
 current_datetime = datetime('now');
 formattedDate = string(datestr(current_datetime, 'dd_mmm_yyyy_HH_MM_SS'));
-cd = 'T:\PROJECTS\_MG_docs\MLSVARs\revision1\';
+cd = cd_path;
 
-metadata_dir                = append(cd,'output\',which_VAR,'\',formattedDate);
+metadata_dir                = append(cd,'\output\',which_VAR,'\',formattedDate);
 forecast_fancharts          = append(metadata_dir,'\forecast_fancharts\');
 GIRFs_dir                   = append(metadata_dir,'\GIRFs\');
 tables_dir                  = append(metadata_dir,'\tables\');
