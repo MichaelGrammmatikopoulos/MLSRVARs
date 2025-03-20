@@ -20,7 +20,14 @@ A.) **Toolbox dependencies**
   4. Parallel computing toolbox
 
 ------------------------------------------------------------------------
-B.) **Parallel computing settings**
+B.) **Set up** 
+------------------------------------------------------------------------
+You should only have to edit line 60 with your directory.
+There might be additional steps needed in case you do not have the above 
+toolboxes installed, or installed in different locations.
+
+------------------------------------------------------------------------
+C.) **Parallel computing settings**
 ------------------------------------------------------------------------
 
 The code has by default **_numWorkers = no_of_models;_**.
@@ -39,7 +46,7 @@ go to HOME>parallel>preferences and change the number of workers.
 Another solution is to comment out lines 221-222.
 
 ------------------------------------------------------------------------
-C.) **Reproductibility / Computation time**
+D.) **Reproductibility / Computation time**
 ------------------------------------------------------------------------
 
 Replication of the paper results can be done with setting **_ndraws = 15000_**.
