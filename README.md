@@ -1,6 +1,8 @@
 ------------------------------------------------------------------------
 MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
+Working paper: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4828070
+------------------------------------------------------------------------
 Code Written By: Michael Grammatikopoulos    
             email: Michael.Grammatikopoulos@moodys.com
 ------------------------------------------------------------------------
