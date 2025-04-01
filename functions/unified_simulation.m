@@ -60,7 +60,10 @@ if contains(prior_type,'blasso','ignorecase',true) %#ok<STRIFCND>
         % tau
         Stau                      = sqrt(lambda{ii,1}./(theta{ii,1}.^2));
         invtau                    = random('inversegaussian',Stau,lambda{ii,1});
-        invtau (isnan( invtau  )) = 10^-6;
+        % invtau (isnan( invtau  )) = 10^-6;
+        invtau(isnan(invtau)|(invtau<=0)) = 10^-6; 
+        invtau(sign(invtau).*isinf(invtau)<0) = 10^-6;
+        invtau(sign(invtau).*isinf(invtau)>0) = 10^6;
         tau{ii,1}                 = 1./invtau;
         invVtheta{ii,1}           = (diag(invtau));
 
