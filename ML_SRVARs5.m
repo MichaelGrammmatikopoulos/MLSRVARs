@@ -2,7 +2,7 @@
 %
 %          MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                        
 %
-%          Date : MARCH, 2025
+%          Date : April 1, 2025
 %
 %          Code Written By: Michael Grammatikopoulos    
 %                    email: Michael.Grammatikopoulos@moodys.com  
@@ -45,9 +45,16 @@
 % policy when predicting future interest rates.
 %
 % MLSRVARs Revision History:
-% Februray 27, 2024 - Version 1
-% September 1, 2024 - Version 2
-% March 20, 2025 - Version 3
+% Februray 27, 2024 - Version 0.1
+% September 1, 2024 - Version 0.2
+% March 20, 2025 - Version 1.0
+% April, 2025 - Version 1.01
+% - Added support for Global shrinkage BLASSO models.
+% - Updated the BLASSO prior hyperparameters.
+% - Updated the create_tables_and_graphs function allowing the user to
+% customize which graphs to be printed.
+% - Updated BLASSO initial conditions to remove instability.
+%  
 %======================================================================
 
 %% ===================== HOUSEKEEPING =====================
@@ -56,8 +63,9 @@ close all
 clearvars -global
 clear; clc;
 
+user_path = 'C:/Users/halod';
 % Call the programs that loads raw data vintages
-cd_path = 'C:/Users/USERNAME/Documents/MLSRVARs-main';
+cd_path = append(user_path, '/Documents/MLSRVARs-main');
 pathdata = [cd_path, '/data'];
 pathfunctions = [cd_path,'/functions'];
 pathfunctions2 = [cd_path,'/functions/export_fig'];
@@ -65,7 +73,7 @@ addpath(pathdata);
 addpath(pathfunctions);
 addpath(pathfunctions2);
 % addpath('C:/Program Files/MATLAB/2023b/toolbox/econ/econ')
-addpath('C:/Users/USERNAME/Documents/MLSRVARs-main/data/WuXia')
+addpath(append(user_path, '/Documents/MLSRVARs-main/data/WuXia'))
 
 % Create SSP dataset
 make_ssp_dataset
@@ -114,7 +122,7 @@ thin_gibbs                  = 1;                         % draws for simulation.
 check_stationarity          = 0;                         % truncatenonstationary draws?
 shrink_all_to_zero          = 1;
 
-IRF1scale                   = 1;
+IRF1scale                   = 1;          
 draw_GIRFs                  = 1;
 irf_forecast_horizon        = 16;
 variable_to_shock           = 'FEDFUNDS'; % CPIAUCSL
@@ -156,8 +164,10 @@ all_models = [
     "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
     "ssvs",          "ssvs_ssp",           "ssvs_stvol",           "ssvs_stvol_ssp",...
     "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
+    "blasso_G",      "blasso_G_ssp",       "blasso_G_stvol",       "blasso_G_stvol_ssp",...
+    "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp",...
     "blasso_A",      "blasso_A_ssp",       "blasso_A_stvol",       "blasso_A_stvol_ssp",...
-    "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",    ...
+    "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
     "DirLap",        "DirLap_ssp",         "DirLap_stvol",         "DirLap_stvol_ssp",...
     "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"
     ];
@@ -216,9 +226,9 @@ benchmark_model = all_models(1);
 ndxBENCH        = find(ismember(all_models, benchmark_model));
 no_of_models    = size(all_models,2);
 
-% Set the number of workers to 16
+% Limiting the number of workers to max 32
 delete(gcp('nocreate'))
-numWorkers = no_of_models;
+numWorkers = min(32, no_of_models);
 parpool('local', numWorkers);
 
 %% Set up the Forecast Evaluation (FE) samples
@@ -472,10 +482,10 @@ ah  = 0; Vh  = 10;
 abeta = 0.5; agam = 0.5; %abeta = 0.95; agam = 0.95;
 
 % BLASSO
-a0_c = N;                b0_c = 1;
-a0_L = N;                b0_L = 1;
+a0_c = max(N/4,1);                b0_c = 1;
+a0_L = max(N/4,1);                b0_L = 1;
 
-a0_global = N*(N-1)/2;  b0_global   = 1/N;
+a0_global = max(N/4,1);  b0_global   = 1;
 
 % SSP-SSVS
 load VAR_s2.mat
@@ -578,7 +588,7 @@ parfor model_i = 1:no_of_models
 end %for model_i
 
 actual_runtime = num2str( etime( clock, start_time_parfor) );
-disp( ['All models` MCMCs took '  num2str( etime( clock, start_time_parfor) ) ' seconds' ] );
+disp( ['All models` MCMCs took '  num2str( etime( clock, start_time_parfor)/3600 ) ' hours' ] );
 
 current_datetime = datetime('now');
 formattedDate = string(datestr(current_datetime, 'dd_mmm_yyyy_HH_MM_SS'));
@@ -636,10 +646,15 @@ for sample_i = 1:no_of_samples
     end
 end
 
+produce_IRFs_graphs = 0; 
+produce_SV_graphs = 0; 
+produce_SR_graphs = 1; 
+produce_FAN_graphs = 1;
 [table_graph_results] = create_tables_and_graphs(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH,all_models_pretty, pretty_names, var_mnemonic_i, ...
     tcode, minnesotaPriorMean, which_VAR, results, ...
     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
     IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
-    post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2);
+    post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
+    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs);
