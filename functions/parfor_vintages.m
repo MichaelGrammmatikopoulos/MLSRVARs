@@ -346,11 +346,11 @@ for vint_ii = 1:no_of_samples
                 theta0{iv,1} = 1e-6*ones(km,1);
             end
 
-            tau{iv,1} = 10^-6*ones(km,1);
+            tau{iv,1} = 10^-2*ones(km,1);
             tau_c{iv} = tau{iv}(1:no_of_regression_coef);
             tau_L{iv} = tau{iv}(no_of_regression_coef+1:end);
             invVtheta{iv,1} = sparse(diag(1./tau{iv,1}));
-            lambda{iv,1} = 1;
+            lambda{iv,1} = 5;
         end
 
     end
