@@ -2,7 +2,7 @@
 %
 %          MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                        
 %
-%          Date : April 1, 2025
+%          Date : June 3, 2025
 %
 %          Code Written By: Michael Grammatikopoulos    
 %                    email: Michael.Grammatikopoulos@moodys.com  
@@ -10,7 +10,7 @@
 %======================================================================
 % 
 % The working paper and supplementary appendices are available here:
-% https://github.com/MichaelGrammatikopoulosMoodys
+% https://github.com/MichaelGrammatikopoulos
 % 
 % This code comes without technical support of any kind.  It is expected 
 % to reproduce the results reported in the paper. Under no circumstances 
@@ -54,7 +54,10 @@
 % - Updated the create_tables_and_graphs function allowing the user to
 % customize which graphs to be printed.
 % - Updated BLASSO initial conditions to remove instability.
-%  
+% 
+% June, 2025 - Version 1.02
+% - Added graphs for relative comparison of recursive moving averages of loss functions
+%
 %======================================================================
 
 %% ===================== HOUSEKEEPING =====================
@@ -65,7 +68,7 @@ clear; clc;
 
 user_path = 'C:/Users/halod';
 % Call the programs that loads raw data vintages
-cd_path = append(user_path, '/Documents/MLSRVARs-main');
+cd_path = append(user_path, '/Documents/PhD/Chapter 1/MLSRVARs-main');
 pathdata = [cd_path, '/data'];
 pathfunctions = [cd_path,'/functions'];
 pathfunctions2 = [cd_path,'/functions/export_fig'];
@@ -104,12 +107,12 @@ elseif  CHOOSE_VAR == 2
 elseif  CHOOSE_VAR == 3                                  % 2: FINANCIAL VAR: the above plus:  6M ,  1Y , 5Y ,  10Y ,  BAA  ;
     which_VAR = 'macro_VAR';                             % 3: MEDIUM MACRO VAR: GDP, UNEMP, CPI, FEDFUNDS, INDPRO, MCUMFN , EXUSUK , M2SL , PINCOME , PCECC96 , PPIACO
 elseif  CHOOSE_VAR == 4                                  % 4: FULL VAR
-    which_VAR = 'full_VAR';
+    which_VAR = 'full_VAR';.
 end
 
 ROLLING_WINDOW              = 0;                         % 1: Rolling window; 0: Expanding window
 NORMALIZE_DATA              = 0;                         % 1: Scale the Y ~ N(μ,σ^2) dataset to Z = (Y-μ)/σ ~ N(0,1)
-nloop                       = 3000;                      % no of draws
+nloop                       = 15000;                      % no of draws
 burnin                      = nloop/3;                   % no of burn-in draws
 elb_gibbs_burn              = 100;
 
@@ -141,6 +144,9 @@ train_VARp_1_trainAR1_0     = 0;
 VARp_L_prior                = 0;
 only_pre_covid_samples      = 1;
 
+% Recusrive means calculation
+RM_window_i = 8;
+
 %% All models loop preparation
 % The program works without being case sensitive, and placement of the
 % does not matter, i.e. 'stvol_ssvs' == 'SSVS_StVol'
@@ -164,13 +170,14 @@ all_models = [
     "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
     "ssvs",          "ssvs_ssp",           "ssvs_stvol",           "ssvs_stvol_ssp",...
     "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
-    "blasso_G",      "blasso_G_ssp",       "blasso_G_stvol",       "blasso_G_stvol_ssp",...
-    "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp",...
     "blasso_A",      "blasso_A_ssp",       "blasso_A_stvol",       "blasso_A_stvol_ssp",...
     "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
     "DirLap",        "DirLap_ssp",         "DirLap_stvol",         "DirLap_stvol_ssp",...
     "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"
     ];
+% 
+% "blasso_G",      "blasso_G_ssp",       "blasso_G_stvol",       "blasso_G_stvol_ssp",...
+%     "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp",...
 
 models_pretty
 
@@ -616,10 +623,11 @@ save(append(metadata_dir,'\',which_VAR,'_',string(nloop),'_',regexprep(regexprep
 [results] = create_results(yforecast_all_models_samples, ...
     fcstYdraws_all_models_samples, FPActuals, N, no_of_models, ...
     ndxMODEL,no_of_samples, ndxBENCH, ...
-    forecast_horizon_set,all_forecast_samples_idx,quarters_forecast);
+    forecast_horizon_set,all_forecast_samples_idx,quarters_forecast,RM_window_i);
 make_strings_for_graphs
 
 % Create tables and graphs
+mnemonics_for_RMs = find(ismember(var_mnemonic,{'CPIAUCSL','GDP','UNRATE','FEDFUNDS','TB3MS','TB6MS','GS1','GS3','GS5','GS10','BAA'}));
 
 % IRF graph settings
 vint1='2015 Q1';
@@ -648,8 +656,8 @@ end
 
 produce_IRFs_graphs = 0; 
 produce_SV_graphs = 0; 
-produce_SR_graphs = 1; 
-produce_FAN_graphs = 1;
+produce_SR_graphs = 0; 
+produce_FAN_graphs = 0;
 [table_graph_results] = create_tables_and_graphs(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH,all_models_pretty, pretty_names, var_mnemonic_i, ...
     tcode, minnesotaPriorMean, which_VAR, results, ...
     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
@@ -657,4 +665,58 @@ produce_FAN_graphs = 1;
     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
-    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs);
+    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs,mnemonics_for_RMs);
+
+
+x = 1:length(RM_window_i:(no_of_samples-max(forecast_horizon_set)+1));
+% Create a new figure and hold on for multiple plots
+
+model_set = [4 8 [4 8]+8 [4 8]+16 [4 8]+24];
+locations = [repmat({'northeast'},11,1)];
+locations{1}='southeast';
+locations{11}='southeast';
+counter = 0;
+for variable_i = mnemonics_for_RMs;
+    counter=counter+1;
+    location_i=locations{counter};
+    figure;
+    hold on;
+    
+    % Generate distinct colors for each pair of models using the 'lines' colormap
+    num_pairs = numel(model_set) / 2;
+    colors = lines(num_pairs); % Reduce the color count to match the number of pairs
+    
+    % Define line styles for alternating models
+    line_styles = {'-', '-.'}; % Solid for first in pair, dashed for second in pair
+    
+    legend_labels = {}; % Initialize legend labels
+    
+    % Loop over each pair of models
+    for i = 1:2:numel(model_set)
+        model_1 = model_set(i);
+        model_2 = model_set(i+1);
+        
+        % Assign color from colormap based on pair index
+        pair_color = colors(ceil(i/2), :);
+        
+        % Plot first model with solid line
+        plot(x, results.h1.Recursive_Means_CRPS(:,variable_i,model_1), 'Color', pair_color, 'LineStyle', line_styles{1}, 'LineWidth', 1.5);
+        legend_labels{end+1} = sprintf('%s', all_models_pretty(model_1));
+    
+        % Plot second model with dashed line
+        plot(x, results.h1.Recursive_Means_CRPS(:,variable_i,model_2), 'Color', pair_color, 'LineStyle', line_styles{2}, 'LineWidth', 1.5);
+        legend_labels{end+1} = sprintf('%s', all_models_pretty(model_2));
+    end
+    
+    % Set labels and title for the plot
+    xlabel('X-axis');
+    ylabel('Forecast Metric');
+    title(append('Recursive means: ',var_mnemonic(variable_i)));
+    
+    % Add a legend positioned in the bottom right, ensuring correct labeling
+    legend(legend_labels, 'Location', location_i);
+    
+    yline(0, ':k', 'LineWidth', 1.5); % Dashed black line at zero
+
+    hold off;
+end
