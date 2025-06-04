@@ -5,7 +5,7 @@ function  [table_graph_results] = create_tables_and_graphs(naming,irf_forecast_h
     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
-    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs)
+    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs, filter_variables)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%           TABLES             %%%%%%%%%%%%%
@@ -93,9 +93,12 @@ for score_i = scores
             table_rSCOREs_final.Properties.VariableNames = ["Model" pretty_names_short];
             table_rSCOREs_final(ndxBENCH,:)=[];
             title_=append(score_i, ' forecast performance vs. , ', all_models_pretty(ndxBENCH), '-VAR, ', strrep((string(fieldNames(horizon_i))),'h','h = '), char(strrep(strrep(subsample_i,'_',' 20'),'q',' Q')));
-            table2latex(table_rSCOREs_final,convertStringsToChars(append(char(tables_dir),which_VAR,'_',string(fieldNames(horizon_i)),string(subsample_i),'_table_r',score_i,'s_final')),title_,subtitle_,1,all_models);
+            
+            table_rSCOREs_final2 = table_rSCOREs_final(:,[1 filter_variables+1]);
+
+            table2latex(table_rSCOREs_final2,convertStringsToChars(append(char(tables_dir),which_VAR,'_',string(fieldNames(horizon_i)),string(subsample_i),'_table_r',score_i,'s_final')),title_,subtitle_,1,all_models);
   
-            table_graph_results.(string(fieldNames(horizon_i))).(string(append(score_string,subsample_i))) = table_rSCOREs_final;
+            table_graph_results.(string(fieldNames(horizon_i))).(string(append(score_string,subsample_i))) = table_rSCOREs_final2;
         end
     end
 end
