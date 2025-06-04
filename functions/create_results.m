@@ -1,6 +1,6 @@
 function  [results] = create_results(yforecast_all_models_samples, ...
     fcstYdraws_all_models_samples, FPActuals, N, no_of_models, ndxMODEL, ...
-    no_of_samples, ndxBENCH, forecast_horizon_set, all_forecast_samples_idx,quarters_forecast)
+    no_of_samples, ndxBENCH, forecast_horizon_set, all_forecast_samples_idx,quarters_forecast,window_i)
 
 idx2015q4 = find(ismember(string(quarters_forecast),{'2015 Q4'}));
 idx2019q4 = find(ismember(string(quarters_forecast),{'2019 Q4'}));
@@ -127,6 +127,7 @@ for horizon_i = 1:length(forecast_horizon_set)
 
             end
         end
+
     end %for model_i
 
     results.(fieldNames{horizon_i}).rRMSEs_09q1_15q4                  = reshape(rRMSEs_09q1_15q4,N,no_of_models)';
@@ -159,5 +160,16 @@ for horizon_i = 1:length(forecast_horizon_set)
     results.(fieldNames{horizon_i}).GWtests_all_models_CRPS_09q1_15q4  = GWtests_all_models_CRPS_09q1_15q4;
     results.(fieldNames{horizon_i}).GWtests_all_models_CRPS_16q1_19q4  = GWtests_all_models_CRPS_16q1_19q4;
 
+    
+
 end
 
+% Recusrive means calculation
+for horizon_i = 1:length(forecast_horizon_set)
+    forecast_horizon_i = forecast_horizon_set(horizon_i);
+    for model_i = 1:no_of_models
+        results.(fieldNames{horizon_i}).Recursive_Means_RMSE(:,:,model_i) = (movmean(results.(fieldNames{horizon_i}).cRMSEs(:,:,model_i),window_i,'endpoints','discard')./movmean(results.(fieldNames{horizon_i}).cRMSEs(:,:,ndxBENCH),window_i,'endpoints','discard')-1)*100;
+        results.(fieldNames{horizon_i}).Recursive_Means_MAE(:,:,model_i) = (movmean(results.(fieldNames{horizon_i}).cMAEs(:,:,model_i),window_i,'endpoints','discard')./movmean(results.(fieldNames{horizon_i}).cMAEs(:,:,ndxBENCH),window_i,'endpoints','discard')-1)*100;
+        results.(fieldNames{horizon_i}).Recursive_Means_CRPS(:,:,model_i) = (movmean(results.(fieldNames{horizon_i}).cCRPS(:,:,model_i),window_i,'endpoints','discard')./movmean(results.(fieldNames{horizon_i}).cCRPS(:,:,ndxBENCH),window_i,'endpoints','discard')-1)*100;
+    end
+end
