@@ -1,16 +1,15 @@
 %======================================================================
 %
-%          MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                        
+% MLSRVARs : MACHINE LEARNING SHADOW RATE VARs                        
 %
-%          Date : June 3, 2025
-%
-%          Code Written By: Michael Grammatikopoulos    
-%                    email: Michael.Grammatikopoulos@moodys.com  
-%                           
+% Grammatikopoulos, M. 2025. "Forecasting With Machine Learning 
+% Shadow-Rate VARs." Journal of Forecasting 1–17. 
+% https://doi.org/10.1002/for.70041. 
+% 
+% Date : October 28, 2025
 %======================================================================
 % 
-% The working paper and supplementary appendices are available here:
-% https://github.com/MichaelGrammatikopoulos
+% The code is available here: https://github.com/MichaelGrammatikopoulos
 % 
 % This code comes without technical support of any kind.  It is expected 
 % to reproduce the results reported in the paper. Under no circumstances 
@@ -22,7 +21,7 @@
 %
 %======================================================================
 %
-% Main citations: 
+% 1 citations: 
 % 
 % A.) Carriero, A., Clark T., Marcellino, M., Mertens, E.: 
 % Shadow-Rate VARs (2024)
@@ -76,12 +75,13 @@ addpath(pathdata);
 addpath(pathfunctions);
 addpath(pathfunctions2);
 % addpath('C:/Program Files/MATLAB/2023b/toolbox/econ/econ')
-addpath(append(user_path, '/Documents/MLSRVARs-main/data/WuXia'))
+addpath(append(user_path, '/Documents/PhD/Chapter 1/MLSRVARs-main/data/WuXia'))
 
 % Create SSP dataset
+min_year=2005;
 make_ssp_dataset
 
-clearvars -except pathfunctions pathdata cd_path OHS_hyper_set idx spf_dataset_SSP
+clearvars -except pathfunctions pathdata cd_path OHS_hyper_set idx spf_dataset_SSP min_year
 
 WUXIAshadow = matlab.io.datastore.FileSet([pathdata,'/WuXia/WuXiaShadowRate.xlsx']);
 WUXIAshadow2 = spreadsheetDatastore(WUXIAshadow);
@@ -107,7 +107,7 @@ elseif  CHOOSE_VAR == 2
 elseif  CHOOSE_VAR == 3                                  % 2: FINANCIAL VAR: the above plus:  6M ,  1Y , 5Y ,  10Y ,  BAA  ;
     which_VAR = 'macro_VAR';                             % 3: MEDIUM MACRO VAR: GDP, UNEMP, CPI, FEDFUNDS, INDPRO, MCUMFN , EXUSUK , M2SL , PINCOME , PCECC96 , PPIACO
 elseif  CHOOSE_VAR == 4                                  % 4: FULL VAR
-    which_VAR = 'full_VAR';.
+    which_VAR = 'full_VAR';
 end
 
 ROLLING_WINDOW              = 0;                         % 1: Rolling window; 0: Expanding window
@@ -117,13 +117,14 @@ burnin                      = nloop/3;                   % no of burn-in draws
 elb_gibbs_burn              = 100;
 
 p                           = 2;                         % no. of lags
-forecast_horizon_set        = [1 4 8];
+forecast_horizon_set        = [1 4 8 12 16];
 forecast_horizon            = max(forecast_horizon_set); % number of steps forecasted
 forecast_Ndraws             = 1*(nloop-burnin);          % draws sampled from the predictive density
 draw_predictive_densities   = 1;
 thin_gibbs                  = 1;                         % draws for simulation.
-check_stationarity          = 0;                         % truncatenonstationary draws?
+check_stationarity          = 1;                         % truncatenonstationary draws?
 shrink_all_to_zero          = 1;
+SSPssvs                     = 1;
 
 IRF1scale                   = 1;          
 draw_GIRFs                  = 1;
@@ -144,9 +145,6 @@ train_VARp_1_trainAR1_0     = 0;
 VARp_L_prior                = 0;
 only_pre_covid_samples      = 1;
 
-% Recusrive means calculation
-RM_window_i = 8;
-
 %% All models loop preparation
 % The program works without being case sensitive, and placement of the
 % does not matter, i.e. 'stvol_ssvs' == 'SSVS_StVol'
@@ -165,19 +163,29 @@ end
 % SSP:    Steady State Prior                   | SRP:    Shadow Rate Prior  
 % SSVS:   Stochastic Search Variable Selection | A-BLASSO: Adaptive Bayesian Least Absolute Shrinkage & Selection Operator 
 
-all_models = [
-    "minnesota",     "minnesota_ssp",      "minnesota_stvol",      "minnesota_stvol_ssp",...
-    "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
-    "ssvs",          "ssvs_ssp",           "ssvs_stvol",           "ssvs_stvol_ssp",...
-    "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
-    "blasso_A",      "blasso_A_ssp",       "blasso_A_stvol",       "blasso_A_stvol_ssp",...
-    "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
-    "DirLap",        "DirLap_ssp",         "DirLap_stvol",         "DirLap_stvol_ssp",...
-    "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"
-    ];
+% all_models = [
+%     "minnesota",     "minnesota_ssp",      "minnesota_stvol",      "minnesota_stvol_ssp",...
+%     "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
+%     "ssvs",          "ssvs_ssp",           "ssvs_stvol",           "ssvs_stvol_ssp",...
+%     "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
+%     "blasso_A",      "blasso_A_ssp",       "blasso_A_stvol",       "blasso_A_stvol_ssp",...
+%     "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
+%     "DirLap",        "DirLap_ssp",         "DirLap_stvol",         "DirLap_stvol_ssp",...
+%     "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"
+%     ];
+
+all_models = ["minnesota_stvol", ...
+        "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
+        "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
+        "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp",...
+        "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"];
+
 % 
 % "blasso_G",      "blasso_G_ssp",       "blasso_G_stvol",       "blasso_G_stvol_ssp",...
 %     "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp",...
+
+% all_models = ["minnesota_stvol", ...
+%         "blasso_G_srp",  "blasso_G_ssp_srp",   "blasso_G_stvol_srp",   "blasso_G_stvol_ssp_srp"];
 
 models_pretty
 
@@ -228,8 +236,8 @@ end
 % In case you selected a subset of models save them here
 all_models_subset = all_models;
 
-% for simplicity, put first model as benchmark
-benchmark_model = all_models(1);
+% for simplicity, put BVAR-SV model as benchmark
+benchmark_model = "minnesota_stvol";
 ndxBENCH        = find(ismember(all_models, benchmark_model));
 no_of_models    = size(all_models,2);
 
@@ -243,16 +251,16 @@ parpool('local', numWorkers);
 % For h = 4, forecasting 2009Q1 in 2008Q1, forecasting 2019Q4 in 2018Q4.
 % For h = 1, forecasting 2009Q1 in 2008Q4, forecasting 2019Q4 in 2019Q3.
 
-first_actual     = '2009 Q1';
-last_actual      = '2019 Q4';
-idx_first_actual = find(ismember(string(quarter_names_initial),{first_actual}));
-idx_last_actual  = find(ismember(string(quarter_names_initial),{last_actual}));
-first_vintage    = '2007 Q1';
-last_vintage     = '2019 Q3';
-idx_first_vintage = find(ismember(string(quarter_names_initial),{first_vintage}));
-idx_last_vintage  = find(ismember(string(quarter_names_initial),{last_vintage}));
-first_forecast   = '2007 Q2';
-last_forecast    = '2019 Q4';
+first_actual       = '2009 Q1';
+last_actual        = '2019 Q4';
+idx_first_actual   = find(ismember(string(quarter_names_initial),{first_actual}));
+idx_last_actual    = find(ismember(string(quarter_names_initial),{last_actual}));
+first_vintage      = append(char(num2str(min_year)), ' Q1');
+last_vintage       = '2019 Q3';
+idx_first_vintage  = find(ismember(string(quarter_names_initial),{first_vintage}));
+idx_last_vintage   = find(ismember(string(quarter_names_initial),{last_vintage}));
+first_forecast     = append(char(num2str(min_year)), ' Q2');
+last_forecast      = '2019 Q4';
 idx_first_forecast = idx_first_vintage+1;
 idx_last_forecast  = idx_last_vintage+1;
 
@@ -260,16 +268,7 @@ quarter_names_FEsample        = quarter_names_initial(idx_first_actual:idx_last_
 quarters_forecast             = quarter_names_initial(idx_first_forecast:idx_last_forecast,:);
 quarter_names_final           = quarter_names_initial(idx_first_vintage:idx_last_vintage);
 
-all_forecast_samples = {};
-all_forecast_samples_idx = {};
-for ii = 1:length(forecast_horizon_set)
-    forecast_horizon_i = forecast_horizon_set(ii);
-    forecast_sample_i = [quarter_names_initial(idx_first_actual-forecast_horizon_i) quarter_names_initial(idx_last_actual-forecast_horizon_i)];
-    all_forecast_samples{ii}=forecast_sample_i;
-    all_forecast_samples_idx{ii}=find(ismember(string(quarters_forecast),string([quarter_names_initial(idx_first_actual-forecast_horizon_i+1) quarter_names_initial(idx_last_actual-forecast_horizon_i+1)])));
-end
-
-FEsample                            = find(ismember(string(quarter_names_initial),{first_vintage, last_vintage}));
+FEsample                      = find(ismember(string(quarter_names_initial),{first_vintage, last_vintage}));
 
 % Adjust FEsample based on the forecast horizon (?) Not if you are running
 % multiple h steps ahead at the same time. Example, if you run the code for
@@ -299,7 +298,7 @@ FEstruct.idx_last_vintage=idx_last_vintage;
 FEstruct.quarter_names_initial=quarter_names_initial;
 FEstruct.FPActuals=FPActuals;
 
-FPActuals_sample_irf                    = find(ismember(string(quarter_names_initial),{'2007 Q2', '2019 Q4'}));
+FPActuals_sample_irf                    = find(ismember(string(quarter_names_initial),{ append(char(num2str(min_year)),' Q2'), '2019 Q4'}));
 FPActuals_irf                           = cell2mat(Y_raw_Transformed_vintages(FPActuals_sample_irf(1)));
 FPActuals_irf                           = FPActuals_irf(end,:);
 
@@ -323,7 +322,7 @@ elseif CHOOSE_VAR == 3 % MEDIUM MACRO VAR
 elseif CHOOSE_VAR == 4 % FULL VAR
     ndxMODEL = find(ismember(var_mnemonic,{'CPIAUCSL','GDP','UNRATE',...
         'PPIACO','PINCOME','PAYEMS','INDPRO','HOUST','PCECC96','M2SL','MCUMFN','EXUSUK',...
-        'FEDFUNDS','TB3MS','TB6MS','GS1','GS3','GS5','GS10','BAA','INFEXP'}));
+        'FEDFUNDS','TB3MS','TB6MS','GS1','GS3','GS5','GS10','BAA'}));
 end
 
 %% Scale data?
@@ -354,7 +353,7 @@ pretty_names = fredMDprettylabel(var_mnemonic_i);
 
 cumcode = logical(1*ones(N,1));
 % Add inflation expectations to the cumulative graphs
-% cumcode(~ismember(var_mnemonic_i,'INFEXP') & (tcode == 1 | tcode==4))=0;
+% cumcode(~ismember(var_mnemonic_i,'PREMIA') & (tcode == 1 | tcode==4))=0;
 cumcode((tcode == 1 | tcode==4))=0;
 
 %% ==================== HYPERPARAMETERS ====================
@@ -384,7 +383,7 @@ for n = 1 : N
 end
 
 % Prior on conditional mean coefficients, use Minnesota setup
-if train_VARp_1_trainAR1_0 == 1
+if train_VARp_1_trainAR1_0 == 0
     % VAR(p) training
     VARresid=NaN(T-p,N);
     % for i=1:N
@@ -465,11 +464,11 @@ else
 end
 
 % Prior hyperparameters
-nu = size(ndxMODEL,2); S0 = 0.01*nu; 
-Vbeta = 1; Va= 1;
+nu0 = 1; S0 = 0.01; % nu0 = 5; S0 = .1^2*(nu0-1); 
+Vbeta = 1; Va= 10;
 
 % SSVS without Minnesota scaling
-tau0_c    = 0.0001;
+tau0_c    = 1e-6;
 tau1_c    = 1/9;
 
 tau0_L    = tau0_c;
@@ -482,29 +481,31 @@ tau0_min = 0.5;
 tau1_min = 2;
 
 % Stochastic Volatility priors
-nu0 = 5; S0h = 0.01;
-ah  = 0; Vh  = 10;
+nu0h = 1; S0h = 0.01; 
+ah   = 1e-6; Vh  = 10;
 
 % DL priors
 abeta = 0.5; agam = 0.5; %abeta = 0.95; agam = 0.95;
 
 % BLASSO
-a0_c = max(N/4,1);                b0_c = 1;
-a0_L = max(N/4,1);                b0_L = 1;
+a0_c = 1;                b0_c = 1;
+a0_L = 1;                b0_L = 1;
 
-a0_global = max(N/4,1);  b0_global   = 1;
+a0_global = 2;  b0_global   = 1;
 
 % SSP-SSVS
 load VAR_s2.mat
-tau0_MU = 0.0001*diag(VAR_s2(:,ndxMODEL))./diag(VAR_s2(:,ndxMODEL));
-tau1_MU = 10;
+
+% SSPSSVS
+tau0_MU = 1/9;
+tau1_MU = 1;
 
 ndx_variable_to_shock = find(ismember(var_mnemonic_i,{variable_to_shock}));
 
 shadowrateTails_all_models_samples  = cell(no_of_models,1);
 IRFPlus_draws_all_models_samples    = cell(no_of_models,1);
 IRFMinus_draws_all_models_samples   = cell(no_of_models,1);
-% yforecast_all_models_samples        = cell(no_of_models,1);
+yforecast_all_models_samples        = cell(no_of_models,1);
 fcstYdraws_all_models_samples       = cell(no_of_models,1);
 post_h_all_models_samples           = cell(no_of_models,1);
 MU_all_models_samples               = cell(no_of_models,1);
@@ -525,7 +526,7 @@ Min_tbl=renamevars(Min_tbl,["Var1","Var2","Var3","Var4","L_const_min"],["lambda1
 ablasso_tbl = table(a0_c,b0_c,a0_L,b0_L);
 gblasso_tbl = table(a0_global,b0_global);
 dilap_tbl = table(abeta,agam);
-sv_tbl = table(nu0,S0h,ah,Vh);
+sv_tbl = table(nu0h,S0h,ah,Vh);
 
 display_settings_HSSRVAR
 start_time_parfor = clock;
@@ -563,12 +564,12 @@ parfor model_i = 1:no_of_models
     ROLLING_WINDOW, NORMALIZE_DATA, var_mnemonic_i, p, FLOOR_ELB, spf_dataset_SSP, forecast_Ndraws, ...
     nloop,burnin,forecast_horizon,irf_forecast_horizon,SSP_id,minnesotaPriorMean,sigma_const, ...
     Pi_pv,Pi_pm,VARp_L_prior,L_const_min,Estrella_identification,thin_gibbs,tau0_c, ...
-    tau1_c,tau0_L,tau1_L,tau1_min,tau0_min,probability_i,nu0,S0h,ah,Vh,a0_c,b0_c,a0_L,b0_L,a0_global,b0_global, ...
+    tau1_c,tau0_L,tau1_L,tau1_min,tau0_min,probability_i,nu0h,S0h,ah,Vh,a0_c,b0_c,a0_L,b0_L,a0_global,b0_global, ...
     ndx_variable_to_shock,check_stationarity,draw_predictive_densities,prc70, ...
     forecast_horizon_set,shadowrateTails_all_samples, draw_GIRFs, IRF1scale, ...
     Klagreg, N, abeta, agam, elb_gibbs_burn, yforecast_all_samples, fcstYdraws_all_samples, ...
     IRFPlus_tails_all_samples, IRFMinus_tails_all_samples, post_h_all_samples, MU_all_samples, shrink_all_to_zero, ...
-    tau0_MU, tau1_MU, S0, nu)
+    tau0_MU, tau1_MU, S0, nu0, SSPssvs)
 
     shadowrateTails_all_models_samples{model_i,1}   = shadowrateTails_all_samples;
     IRFPlus_tails_all_models_samples{model_i,1}     = IRFPlus_tails_all_samples;
@@ -595,7 +596,8 @@ parfor model_i = 1:no_of_models
 end %for model_i
 
 actual_runtime = num2str( etime( clock, start_time_parfor) );
-disp( ['All models` MCMCs took '  num2str( etime( clock, start_time_parfor)/3600 ) ' hours' ] );
+num_hours = num2str( etime( clock, start_time_parfor)/3600 );
+disp( ['All models` MCMCs took '  num_hours ' hours' ] );
 
 current_datetime = datetime('now');
 formattedDate = string(datestr(current_datetime, 'dd_mmm_yyyy_HH_MM_SS'));
@@ -608,6 +610,7 @@ tables_dir                  = append(metadata_dir,'\tables\');
 shadow_rates_graphs_dir     = append(metadata_dir,'\shadow_rates_graphs\');
 ssp_graphs_dir              = append(metadata_dir,'\ssp_graphs\');
 volatilities_dir            = append(metadata_dir,'\volatilities\');
+RMs_dir                     = append(metadata_dir,'\RMs\');
 
 mkdir(metadata_dir);
 mkdir(forecast_fancharts);
@@ -616,18 +619,43 @@ mkdir(shadow_rates_graphs_dir);
 mkdir(ssp_graphs_dir);
 mkdir(tables_dir);
 mkdir(volatilities_dir);
+mkdir(RMs_dir);
 
 save(append(metadata_dir,'\',which_VAR,'_',string(nloop),'_',regexprep(regexprep(string(datetime("now")), ' ', '_'),':','_'),'_results_prelim.mat'), '-v7.3');
 
 % Create results
+user_path = 'C:/Users/halod';
+% Call the programs that loads raw data vintages
+cd_path = append(user_path, '/Documents/PhD/Chapter 1/MLSRVARs-main');
+pathdata = [cd_path, '/data'];
+pathfunctions = [cd_path,'/functions'];
+pathfunctions2 = [cd_path,'/functions/export_fig'];
+addpath(pathdata);
+addpath(pathfunctions);
+addpath(pathfunctions2);
+% addpath('C:/Program Files/MATLAB/2023b/toolbox/econ/econ')
+% addpath(append(user_path, '/Documents/MLSRVARs-main/data/WuXia'))
+
+ndxBENCH = find(ismember(all_models, "minnesota_stvol")); 
+
+all_forecast_samples = {};
+all_forecast_samples_idx = {};
+for ii = 1:length(forecast_horizon_set)
+    forecast_horizon_i = forecast_horizon_set(ii);
+    forecast_sample_i = [quarter_names_initial(idx_first_actual-forecast_horizon_i) quarter_names_initial(idx_last_actual-forecast_horizon_i)];
+    all_forecast_samples{ii}=forecast_sample_i;
+    all_forecast_samples_idx{ii}=find(ismember(string(quarters_forecast),string([quarter_names_initial(idx_first_actual-forecast_horizon_i+1) quarter_names_initial(idx_last_actual-forecast_horizon_i+1)])));
+end
+
 [results] = create_results(yforecast_all_models_samples, ...
-    fcstYdraws_all_models_samples, FPActuals, N, no_of_models, ...
+    fcstYdraws_all_models_samples, FPActuals_irf, N, no_of_models, ...
     ndxMODEL,no_of_samples, ndxBENCH, ...
-    forecast_horizon_set,all_forecast_samples_idx,quarters_forecast,RM_window_i);
+    forecast_horizon_set,all_forecast_samples_idx,quarters_forecast,8);
+
 make_strings_for_graphs
 
 % Create tables and graphs
-mnemonics_for_RMs = find(ismember(var_mnemonic,{'CPIAUCSL','GDP','UNRATE','FEDFUNDS','TB3MS','TB6MS','GS1','GS3','GS5','GS10','BAA'}));
+mnemonics_for_RMs = find(ismember(var_mnemonic,{'CPIAUCSL','GDP','UNRATE','FEDFUNDS','TB3MS','GS1','GS3','GS5','GS10'}));
 
 % IRF graph settings
 vint1='2015 Q1';
@@ -635,88 +663,325 @@ vint2='2018 Q1';
 vintages_to_run = [find(ismember(string(quarter_names_final),{vint1})) find(ismember(string(quarter_names_final),{vint2}))];
 mnemonics_for_girfs = {'FEDFUNDS','HOUST','UNRATE','INFEXP', ...
                 'INDPRO','PAYEMS','PPIACO','PCECC96','M2SL'};
+% Create tables and graphs
+filter_variables = find(ismember(var_mnemonic,{'CPIAUCSL','UNRATE','PCECC96','FEDFUNDS','TB3MS','GS1','GS3','GS5','GS10'}));
 
-cumul_IRFPlus_tails_all_models_samples = IRFPlus_tails_all_models_samples;
-for sample_i = 1:no_of_samples
-    for model_i = 1:no_of_models
-        for quant_i = 1:3
-            cumul_IRFPlus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i) = cumsum(cumul_IRFPlus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i),2);
-        end
-    end
-end
-
-cumul_IRFMinus_tails_all_models_samples = IRFMinus_tails_all_models_samples;
-for sample_i = 1:no_of_samples
-    for model_i = 1:no_of_models
-        for quant_i = 1:3
-            cumul_IRFMinus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i) = cumsum(cumul_IRFMinus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i),2);
-        end
-    end
-end
-
+produce_tables=1;
 produce_IRFs_graphs = 0; 
 produce_SV_graphs = 0; 
 produce_SR_graphs = 0; 
 produce_FAN_graphs = 0;
-[table_graph_results] = create_tables_and_graphs(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH,all_models_pretty, pretty_names, var_mnemonic_i, ...
+[table_results] = create_tables_final(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH, all_models_pretty, pretty_names, var_mnemonic_i, ...
     tcode, minnesotaPriorMean, which_VAR, results, ...
     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
     IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
+    post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,[4 8 16],WUXIAshadow2, ...
+    produce_tables, filter_variables);
+
+[graph_results] = create_graphs(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH, all_models_pretty, pretty_names, var_mnemonic_i, ...
+    tcode, minnesotaPriorMean, which_VAR, results, ...
+    tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
+    IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
+    all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
+    FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, yforecast_all_models_samples, ...
     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
     produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs,mnemonics_for_RMs);
 
+% Filter which models you want to get results for
 
-x = 1:length(RM_window_i:(no_of_samples-max(forecast_horizon_set)+1));
-% Create a new figure and hold on for multiple plots
-
-model_set = [4 8 [4 8]+8 [4 8]+16 [4 8]+24];
-locations = [repmat({'northeast'},11,1)];
-locations{1}='southeast';
-locations{11}='southeast';
-counter = 0;
-for variable_i = mnemonics_for_RMs;
-    counter=counter+1;
-    location_i=locations{counter};
-    figure;
-    hold on;
-    
-    % Generate distinct colors for each pair of models using the 'lines' colormap
-    num_pairs = numel(model_set) / 2;
-    colors = lines(num_pairs); % Reduce the color count to match the number of pairs
-    
-    % Define line styles for alternating models
-    line_styles = {'-', '-.'}; % Solid for first in pair, dashed for second in pair
-    
-    legend_labels = {}; % Initialize legend labels
-    
-    % Loop over each pair of models
-    for i = 1:2:numel(model_set)
-        model_1 = model_set(i);
-        model_2 = model_set(i+1);
-        
-        % Assign color from colormap based on pair index
-        pair_color = colors(ceil(i/2), :);
-        
-        % Plot first model with solid line
-        plot(x, results.h1.Recursive_Means_CRPS(:,variable_i,model_1), 'Color', pair_color, 'LineStyle', line_styles{1}, 'LineWidth', 1.5);
-        legend_labels{end+1} = sprintf('%s', all_models_pretty(model_1));
-    
-        % Plot second model with dashed line
-        plot(x, results.h1.Recursive_Means_CRPS(:,variable_i,model_2), 'Color', pair_color, 'LineStyle', line_styles{2}, 'LineWidth', 1.5);
-        legend_labels{end+1} = sprintf('%s', all_models_pretty(model_2));
+% Recusrive means calculation
+RM_window = 8;
+fieldNames = {'h'+string(forecast_horizon_set(1)), 'h'+string(forecast_horizon_set(2)), 'h'+string(forecast_horizon_set(3)), 'h'+string(forecast_horizon_set(4)), 'h'+string(forecast_horizon_set(5))};
+RMs=NaN(no_of_samples-RM_window-max(forecast_horizon_set)+2,length(var_mnemonic),length(all_models),length(forecast_horizon_set));
+RMs_CRPS=RMs;
+RMs_RMSE=RMs;
+RMs_MAE=RMs;
+for horizon_i = 1:length(forecast_horizon_set)
+    for model_i = 1:length(all_models) 
+        % Initialize
+        tt=0;
+        RMs_RMSE(1,:,model_i,horizon_i) = 100*(sqrt(mean(results.(fieldNames{horizon_i}).SE_matrices{model_i}(1:(RM_window+tt),:)))./sqrt(mean(results.(fieldNames{horizon_i}).SE_matrices{ndxBENCH}(1:(RM_window+tt),:)))-1);
+        RMs_MAE(1,:,model_i,horizon_i) = 100*(mean(results.(fieldNames{horizon_i}).AE_matrices{model_i}(1:(RM_window+tt),:))./mean(results.(fieldNames{horizon_i}).AE_matrices{ndxBENCH}(1:(RM_window+tt),:))-1);
+        RMs_CRPS(1,:,model_i,horizon_i) = 100*(mean(results.(fieldNames{horizon_i}).CR_matrices{model_i}(1:(RM_window+tt),:))./mean(results.(fieldNames{horizon_i}).CR_matrices{ndxBENCH}(1:(RM_window+tt),:))-1);
+        for tt = 2:(no_of_samples-RM_window-max(forecast_horizon_set)+2)
+            RMs_RMSE(tt,:,model_i,horizon_i) = 100*(sqrt(mean(results.(fieldNames{horizon_i}).SE_matrices{model_i}(1:(RM_window+tt-1),:)))./sqrt(mean(results.(fieldNames{horizon_i}).SE_matrices{ndxBENCH}(1:(RM_window+tt-1),:)))-1);
+            RMs_MAE(tt,:,model_i,horizon_i) = 100*(mean(results.(fieldNames{horizon_i}).AE_matrices{model_i}(1:(RM_window+tt-1),:))./mean(results.(fieldNames{horizon_i}).AE_matrices{ndxBENCH}(1:(RM_window+tt-1),:))-1);
+            RMs_CRPS(tt,:,model_i,horizon_i) = 100*(mean(results.(fieldNames{horizon_i}).CR_matrices{model_i}(1:(RM_window+tt-1),:))./mean(results.(fieldNames{horizon_i}).CR_matrices{ndxBENCH}(1:(RM_window+tt-1),:))-1);
+        end
     end
-    
-    % Set labels and title for the plot
-    xlabel('X-axis');
-    ylabel('Forecast Metric');
-    title(append('Recursive means: ',var_mnemonic(variable_i)));
-    
-    % Add a legend positioned in the bottom right, ensuring correct labeling
-    legend(legend_labels, 'Location', location_i);
-    
-    yline(0, ':k', 'LineWidth', 1.5); % Dashed black line at zero
-
-    hold off;
 end
+
+% Recusrive means plots
+scores      = {'RMSE','MAE', 'CRPS'};
+for score_i = scores
+    for horizon_i = 1:length(forecast_horizon_set)
+        % --- Create a single figure for the entire 3x3 grid.
+        % We give the figure window a descriptive name based on the horizon.
+        f = figure('Name', ['Horizon h=' num2str(forecast_horizon_set(horizon_i))], 'NumberTitle', 'off','WindowState', 'maximized');
+        x = 1:size(RMs_CRPS, 1); % A more robust way to define the x-axis
+        model_set = find((contains(all_models,"ssp_srp") | contains(all_models,"stvol_ssp_srp")));
+        % --- Prepare data for the single legend for the entire figure
+        % These variables will store all unique legend entries (labels, colors, line styles)
+        % that will be used across all subplots in this figure.
+        num_pairs = numel(model_set) / 2;
+        colors = lines(num_pairs);
+        line_styles = {'-', '--'}; % Line styles for model_1 and model_2 in each pair
+        master_legend_labels = {};
+        master_legend_colors = [];
+        master_legend_line_styles = {};
+        % Collect all unique legend entries (labels, colors, line styles) once
+        for i = 1:2:numel(model_set)
+            model_1 = model_set(i);
+            model_2 = model_set(i+1);
+            pair_color = colors(ceil(i/2), :);
+            master_legend_labels{end+1} = sprintf('%s', all_models_pretty(model_1));
+            master_legend_colors = [master_legend_colors; pair_color];
+            master_legend_line_styles{end+1} = line_styles{1};
+            master_legend_labels{end+1} = sprintf('%s', all_models_pretty(model_2));
+            master_legend_colors = [master_legend_colors; pair_color];
+            master_legend_line_styles{end+1} = line_styles{2};
+        end
+        counter = 0; % Counter for subplot position
+        for variable_i = filter_variables
+            counter = counter + 1;
+            % Select the position for the next plot in a 3x3 grid.
+            subplot(3, 3, counter);
+            hold on;
+            % --- Plotting logic remains the same for individual subplots ---
+            for i = 1:2:numel(model_set)
+                model_1 = model_set(i);
+                model_2 = model_set(i+1);
+                pair_color = colors(ceil(i/2), :);
+                if ismember(score_i,{'RMSE'})
+                    plot(x, RMs_RMSE(:,variable_i,model_1,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{1}, 'LineWidth', 1.5);
+                    plot(x, RMs_RMSE(:,variable_i,model_2,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{2}, 'LineWidth', 1.5);
+                elseif ismember(score_i,{'MAE'})
+                    plot(x, RMs_MAE(:,variable_i,model_1,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{1}, 'LineWidth', 1.5);
+                    plot(x, RMs_MAE(:,variable_i,model_2,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{2}, 'LineWidth', 1.5);
+                else
+                    plot(x, RMs_CRPS(:,variable_i,model_1,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{1}, 'LineWidth', 1.5);
+                    plot(x, RMs_CRPS(:,variable_i,model_2,horizon_i), 'Color', pair_color, 'LineStyle', line_styles{2}, 'LineWidth', 1.5);
+                end
+            end
+            % Adjust labels and titles for a subplot format.
+            xlabel('Time');
+            % --- MODIFICATION START ---
+            ylabel('% deviation from BVAR-SV'); % Changed y-axis label
+            % --- MODIFICATION END ---
+            title(var_mnemonic(variable_i));
+            % Add a horizontal line at y=0 for reference
+            yline(0, ':k', 'LineWidth', 1);
+            % --- NEW: Adjust x-axis limits and labels to show quarters ---
+            num_data_points = size(RMs_CRPS, 1); % e.g., 37 points
+            % Set x-axis limits to exactly match data extent
+            xlim([1 num_data_points]);
+            % Define how often you want a tick/label (e.g., every 4 quarters for yearly marks)
+            % Adjust 'interval' based on how many labels you want to see for readability.
+            % If num_data_points is small (e.g., <10-15), you might set interval = 1.
+            interval = 4; % For showing labels roughly once a year (assuming 4 quarters/year)
+            x_tick_positions = 1:interval:num_data_points;
+            % Ensure at least one tick if data exists but interval is too large
+            if isempty(x_tick_positions) && num_data_points > 0
+                x_tick_positions = 1;
+            end
+            % Determine the exact indices in quarter_names_FEsample that correspond to these tick positions
+            % We assume `RM_window` is the 1-based index in `quarter_names_FEsample`
+            % that corresponds to the first data point (x=1) in RMs_CRPS.
+            % So, x-axis value 'k' corresponds to `RM_window + k - 1` in `quarter_names_FEsample`.
+            x_tick_labels_indices = RM_window + x_tick_positions - 1;
+            % Pre-allocate cell array for labels
+            x_tick_labels = cell(size(x_tick_labels_indices));
+            % Loop to get the quarter names for the selected tick positions
+            for k = 1:length(x_tick_labels_indices)
+                current_idx_in_quarter_names = x_tick_labels_indices(k);
+                if current_idx_in_quarter_names > length(quarter_names_FEsample) || current_idx_in_quarter_names < 1
+                    % Handle cases where the index might be out of bounds for quarter_names_FEsample
+                    x_tick_labels{k} = 'N/A'; % Or some other indicator for missing data
+                else
+                    % Get the label from quarter_names_FEsample. Convert to char if it's a string array.
+                    x_tick_labels{k} = char(string(quarter_names_FEsample(current_idx_in_quarter_names)));
+                end
+            end
+            % Apply the custom ticks and labels to the current subplot
+            clear xticks
+            xticks(x_tick_positions);
+            xticklabels(x_tick_labels);
+            % Rotate labels for better readability, especially with many labels
+            xtickangle(45); % Rotates labels by 45 degrees
+            hold off;
+            % --- Handle case for more than 9 plots by creating a new figure
+            if counter == 9 && variable_i ~= filter_variables(end)
+                % --- MODIFICATION START ---
+                sgtitle(f, append('Recursive Means (',score_i,') Comparison (relative to BVAR-SV benchmark), Horizon h = ', char(string(forecast_horizon_set(horizon_i)))));
+                % --- MODIFICATION END ---
+                h_legend_ax = axes('Position', [0 0 1 1], 'Visible', 'off');
+                hold(h_legend_ax, 'on');
+                legend_handles = gobjects(0);
+                for k = 1:length(master_legend_labels)
+                    h_line = plot(h_legend_ax, NaN, NaN, 'Color', master_legend_colors(k,:), 'LineStyle', master_legend_line_styles{k}, 'LineWidth', 1.5);
+                    legend_handles(end+1) = h_line;
+                end
+                legend(h_legend_ax, legend_handles, master_legend_labels, 'Location', 'southoutside', 'Orientation', 'horizontal', 'FontSize', 9);
+                hold(h_legend_ax, 'off');
+                f = figure('Name', ['Horizon h = ' num2str(forecast_horizon_set(horizon_i)) ' (cont.)'], 'NumberTitle', 'off');
+                counter = 0;
+            end
+        end
+
+        sgtitle(f, append('Recursive Means (',score_i,') Comparison (relative to BVAR-SV benchmark), Horizon h = ', char(string(forecast_horizon_set(horizon_i)))));
+
+        h_legend_ax = axes('Position', [0 0 1 1], 'Visible', 'off');
+        hold(h_legend_ax, 'on');
+        legend_handles = gobjects(0);
+        for k = 1:length(master_legend_labels)
+            h_line = plot(h_legend_ax, NaN, NaN, 'Color', master_legend_colors(k,:), 'LineStyle', master_legend_line_styles{k}, 'LineWidth', 1.5);
+            legend_handles(end+1) = h_line;
+        end
+        legend(h_legend_ax, legend_handles, master_legend_labels, 'Location', 'southoutside', 'Orientation', 'horizontal', 'FontSize', 9);
+        hold(h_legend_ax, 'off');
+
+        file_name = append('RMs_',char(string(score_i)),'_h',num2str(forecast_horizon_set(horizon_i)));
+pos = get(f, 'Position');
+  set(f, 'Position', [pos(1) pos(2) pos(3)+100 pos(4)+100])
+        set(gcf, 'Color', 'w')
+        export_fig(append(char(RMs_dir),file_name),'-png', '-a1', '-native','-r300')
+
+    end
+end
+
+format bank
+correlation_table = graph_results.corr_tbl((contains(table2array(graph_results.corr_tbl(:,1)),"SR") | contains(table2array(graph_results.corr_tbl(:,1)),"Wu")),:);
+correlation_table.Properties.VariableNames = strrep(matlab.lang.makeValidName(correlation_table.Properties.VariableNames),"_","");
+correlation_table.Model = cellstr(correlation_table.Model);
+for k = 2:size(correlation_table,2)
+    correlation_table(:,k) = round(correlation_table(:,k),2);
+end
+table2latex(correlation_table, char(append(tables_dir, "correlations.tex")))
+
+% 
+% user_path = 'C:/Users/halod';
+% % Call the programs that loads raw data vintages
+% cd_path = append(user_path, '/Documents/PhD/Chapter 1/MLSRVARs-main');
+% pathdata = [cd_path, '/data'];
+% pathfunctions = [cd_path,'/functions'];
+% pathfunctions2 = [cd_path,'/functions/export_fig'];
+% addpath(pathdata);
+% addpath(pathfunctions);
+% addpath(pathfunctions2);
+% % addpath('C:/Program Files/MATLAB/2023b/toolbox/econ/econ')
+% % addpath(append(user_path, '/Documents/MLSRVARs-main/data/WuXia'))
+% % 
+% % % Create average of SR models
+% % idx_avg = ismember(all_models, [
+% %         "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
+% %         "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
+% %         "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
+% %         "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"
+% %         ]);
+% % yforecast_SR_models = yforecast_all_models_samples(idx_avg);
+% % SR_avg = cell(no_of_samples,1);
+% % no_of_SR_models = size(yforecast_SR_models,1);
+% % for sample_i = 1:no_of_samples
+% %     sum = 0;
+% %     for model_i = 1:no_of_SR_models
+% %         sum = sum + yforecast_SR_models{model_i}{sample_i};
+% %     end
+% %     SR_avg{sample_i} = sum/no_of_SR_models;
+% % end
+% % yforecast_all_models_samples{size(yforecast_all_models_samples,1)+1} = SR_avg;
+% % all_models = [all_models, "SR_avg"];
+% fontsize = 12;
+% colorPlus     = Colors4Plots(1);
+% colorMinus    = Colors4Plots(2);
+% colorBase     = Colors4Plots(8);
+% colorPlus_vint1     = Colors4Plots(1);
+% colorMinus_vint1    = Colors4Plots(2);
+% colorPlus_vint2     = Colors4Plots(2);
+% colorMinus_vint2    = Colors4Plots(1);
+% 
+% % filter_models = 0;
+% % if filter_models == 1
+% %     idx = ismember(all_models, [
+% %         "minnesota_stvol", ...
+% %         "minnesota_srp", "minnesota_ssp_srp",  "minnesota_stvol_srp",  "minnesota_stvol_ssp_srp",...
+% %         "ssvs_srp",      "ssvs_ssp_srp",       "ssvs_stvol_srp",       "ssvs_stvol_ssp_srp",...
+% %         "blasso_A_srp",  "blasso_A_ssp_srp",   "blasso_A_stvol_srp",   "blasso_A_stvol_ssp_srp",...
+% %         "DirLap_srp",    "DirLap_ssp_srp",     "DirLap_stvol_srp",     "DirLap_stvol_ssp_srp"]);
+% % 
+% %     all_models_filtered = all_models(idx);
+% % 
+% %     % for simplicity, put first model as benchmark
+% %     benchmark_model = all_models_filtered(1);
+% %     ndxBENCH        = find(ismember(all_models_filtered, benchmark_model));
+% %     no_of_models    = size(all_models_filtered,2);
+% % else
+% %     all_models_filtered = all_models;
+% %     idx = ismember(all_models_filtered,all_models);
+% % end
+% 
+
+% 
+% % Filtered results
+% [results_filtered] = create_results(yforecast_all_models_samples, ...
+%     fcstYdraws_all_models_samples(idx), FPActuals, N, no_of_models, ndxMODEL, ...
+%     no_of_samples, ndxBENCH, forecast_horizon_set,all_forecast_samples_idx,quarter_names_FEsample,[8]);
+% make_strings_for_graphs
+% 
+% % All results
+% [results_full] = create_results(yforecast_all_models_samples, ...
+%     fcstYdraws_all_models_samples, FPActuals, N, no_of_models, ...
+%     ndxMODEL,no_of_samples, find(ismember(all_models, benchmark_model)), ...
+%     forecast_horizon_set,all_forecast_samples_idx,quarter_names_final,[8]);
+% make_strings_for_graphs
+% 
+% 
+% % IRF graph settings
+% vint1='2015 Q1';
+% vint2='2018 Q1';
+% vintages_to_run = [find(ismember(string(quarter_names_final),{vint1})) find(ismember(string(quarter_names_final),{vint2}))];
+% mnemonics_for_girfs = {'FEDFUNDS','HOUST','UNRATE','PREMIA', ...
+%                 'INDPRO','PAYEMS','PPIACO','PCECC96','M2SL'};
+% 
+% produce_tables = 1; 
+% produce_IRFs_graphs = 0; 
+% produce_SV_graphs = 0; 
+% produce_SR_graphs = 1; 
+% produce_FAN_graphs = 0;
+% [graph_results] = create_graphs(naming, irf_forecast_horizon, length(all_models), draw_GIRFs, ndxBENCH, all_models_pretty, pretty_names, var_mnemonic_i, ...
+%     tcode, minnesotaPriorMean, which_VAR, results_full, ...
+%     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
+%     IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
+%     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
+%     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
+%     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
+% produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs, filter_variables);
+% 
+% [table_results] = create_tables_final(naming, irf_forecast_horizon, length(all_models_filtered), draw_GIRFs, ndxBENCH, all_models_pretty(idx), pretty_names, var_mnemonic_i, ...
+%     tcode, minnesotaPriorMean, which_VAR, results_filtered, ...
+%     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
+%     IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
+%     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
+%     FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
+%     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
+%         produce_tables, filter_variables);
+% 
+
+% cumul_IRFPlus_tails_all_models_samples = IRFPlus_tails_all_models_samples;
+% for sample_i = 1:no_of_samples
+%     for model_i = 1:no_of_models
+%         for quant_i = 1:3
+%             cumul_IRFPlus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i) = cumsum(cumul_IRFPlus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i),2);
+%         end
+%     end
+% end
+% 
+% cumul_IRFMinus_tails_all_models_samples = IRFMinus_tails_all_models_samples;
+% for sample_i = 1:no_of_samples
+%     for model_i = 1:no_of_models
+%         for quant_i = 1:3
+%             cumul_IRFMinus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i) = cumsum(cumul_IRFMinus_tails_all_models_samples{model_i}{sample_i}(cumcode,:,quant_i),2);
+%         end
+%     end
+% end
