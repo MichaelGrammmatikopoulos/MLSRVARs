@@ -49,5 +49,4 @@ D.) **Reproductibility / Computation time**
 ------------------------------------------------------------------------
 
 Replication of the paper results can be done with setting **_ndraws = 15000_**.
-Computational time in an AMD EPYC 7763 64-Core Processor, 2445 Mhz, 8 Core(s), 16 Logical Processor(s)
-is approximately 50 hours. 
+Computational time in an AMD Ryzen 7600 & 32Gb of RAM is approximately 50 hours. 
