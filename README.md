@@ -1,10 +1,9 @@
 ------------------------------------------------------------------------
 MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
-Journal of Forecasting: https://onlinelibrary.wiley.com/doi/10.1002/for.70041
-------------------------------------------------------------------------
-Code Written By: Michael Grammatikopoulos    
-          email: Michael.Grammatikopoulos@moodys.com
+Grammatikopoulos, M. 2025. "Forecasting With Machine Learning 
+Shadow-Rate VARs." Journal of Forecasting 1–17. 
+https://doi.org/10.1002/for.70041. 
 ------------------------------------------------------------------------
 This code comes without technical support of any kind.  It is expected 
 to reproduce the results reported in the paper. Under no circumstances 
