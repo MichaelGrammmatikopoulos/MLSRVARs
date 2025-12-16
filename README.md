@@ -4,12 +4,7 @@ MLSRVARs : MACHINE LEARNING SHADOW RATE VARs
 Grammatikopoulos, M. 2025. "Forecasting With Machine Learning 
 Shadow-Rate VARs." Journal of Forecasting 1–17. 
 https://doi.org/10.1002/for.70041. 
-------------------------------------------------------------------------
-This code comes without technical support of any kind.  It is expected 
-to reproduce the results reported in the paper. Under no circumstances 
-will the author be held responsible for any use (or misuse) of this code 
-in any way.
-------------------------------------------------------------------------
+
 The views in this paper are solely of the author and do not represent 
 the views of Moody's Analytics or the Moody’s Corporation
 ------------------------------------------------------------------------
