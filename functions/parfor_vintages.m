@@ -3,12 +3,12 @@ function  [MU_all_samples, post_h_all_samples, yforecast_all_samples, fcstYdraws
     ROLLING_WINDOW, NORMALIZE_DATA, var_mnemonic_i, p, FLOOR_ELB, spf_dataset_SSP, forecast_Ndraws, ...
     nloop,burnin,forecast_horizon,irf_forecast_horizon,SSP_id,minnesotaPriorMean,sigma_const, ...
     Pi_pv,Pi_pm,VARp_L_prior,L_const_min,Estrella_identification,thin_gibbs,tau0_c, ...
-    tau1_c,tau0_L,tau1_L,tau1_min,tau0_min,probability_i,nu0,S0h,ah,Vh,a0_c,b0_c,a0_L,b0_L,a0_global,b0_global, ...
+    tau1_c,tau0_L,tau1_L,tau1_min,tau0_min,probability_i,nu0h,S0h,ah,Vh,a0_c,b0_c,a0_L,b0_L,a0_global,b0_global, ...
     ndx_variable_to_shock,check_stationarity,draw_predictive_densities,prc70, ...
     forecast_horizon_set,shadowrateTails_all_samples, draw_GIRFs, IRF1scale, ...
     Klagreg, N,  abeta, agam, elb_gibbs_burn, yforecast_all_samples, fcstYdraws_all_samples, ...
     IRFPlus_tails_all_samples, IRFMinus_tails_all_samples, post_h_all_samples, MU_all_samples, ...
-    shrink_all_to_zero,tau0_MU, tau1_MU, S0, nu)
+    shrink_all_to_zero,tau0_MU, tau1_MU, S0, nu0, SSPssvs)
 
 for vint_ii = 1:no_of_samples
 
@@ -127,13 +127,12 @@ for vint_ii = 1:no_of_samples
 
     eyeN = eye(N);
     if contains(lower(prior_type),'ssp')
-        M0 = table2array(spf_dataset_SSP(vint_i,1+ndxMODEL))'.*SSP_id;
-        V0 = 1e-6*eye(N);
-        invV0 = inv(V0);
+        M0  = table2array(spf_dataset_SSP(vint_i,1+ndxMODEL))'.*SSP_id;
+        V0 = 0.01;
+        invV0 = sparse(eye(size(M0,1))*(1./V0));
 
         %% SSPssvs
-        SSPssvs = 1;
-        probability_i_MU=0.5;
+        probability_i_MU=0.2;
 
         if NORMALIZE_DATA == 1
             M0 = (M0-mi_unscale')./sigma_unscale';
@@ -324,7 +323,7 @@ for vint_ii = 1:no_of_samples
                 theta0{iv,1} = 1e-6*ones(km,1);
             end
 
-            invVtheta{iv,1} = 100*ones(km,1);;
+            invVtheta{iv,1} = 0.0001*ones(km,1);;
             invVtheta{iv,1}(1:K) = 10;
             invVtheta{iv,1} = sparse(diag(invVtheta{iv,1}));
         end
@@ -335,7 +334,7 @@ for vint_ii = 1:no_of_samples
                 theta0{iv,1} = 1e-6*ones(km,1);
             end
 
-            invVtheta{iv,1} = 100*ones(km,1);
+            invVtheta{iv,1} = 0.0001*ones(km,1);
             invVtheta{iv,1}(1:K) = 10;
             invVtheta{iv,1} = sparse(diag(invVtheta{iv,1}));
         end
@@ -346,13 +345,12 @@ for vint_ii = 1:no_of_samples
                 theta0{iv,1} = 1e-6*ones(km,1);
             end
 
-            tau{iv,1} = 10^-2*ones(km,1);
+            tau{iv,1} = 10000*ones(km,1);
             tau_c{iv} = tau{iv}(1:no_of_regression_coef);
             tau_L{iv} = tau{iv}(no_of_regression_coef+1:end);
             invVtheta{iv,1} = sparse(diag(1./tau{iv,1}));
-            lambda{iv,1} = 5;
+            lambda{iv,1} = 2;
         end
-
     end
 
     %     if Estrella_identification == 1
@@ -422,7 +420,7 @@ for vint_ii = 1:no_of_samples
     stackAccept = NaN(nloop,1);
 
     for loop = 1:nloop
-
+        
         if contains(prior_type,'ssp','ignorecase',true) && contains(prior_type,'srp','ignorecase',true)
 
             % Not demeaned data for the Y1 calculation
@@ -541,7 +539,7 @@ for vint_ii = 1:no_of_samples
 
         stationarity = 0;
         while stationarity == 0 % truncate non-stationary draws
-
+            % summm=0;
             for kh_i = 1:thin_gibbs
 
                 for ii = 1:N
@@ -561,33 +559,34 @@ for vint_ii = 1:no_of_samples
                 end
 
                 % Store results
-                beta_store = [];
+                theta_store = [];
                 a_store    = [];
+                sqrtht    = [];
 
                 %compute sqrtht^0.5 from volatility states, needed in shadow rate step
                 if contains(prior_type,'stvol','ignorecase',true)
-                    sqrtht     = exp(h/2);
+                    sqrtht     = exp(h./2);
                 else
                     h          = repmat(log(Sig)',T,1);
-                    sqrtht     = exp(h/2);
+                    sqrtht     = exp(h./2);
                 end
 
                 for iv = 1:N
                     if iv ==1
                         km = k/N;
                         theta1 = theta{1,1};
-                        beta_store =[beta_store;theta1];
+                        theta_store =[theta_store;theta1];
                     else
                         km = k/N + iv-1;
                         theta1 = theta{iv,1};
-                        beta_store =[beta_store;theta1(1:k/N)];
+                        theta_store =[theta_store;theta1(1:k/N)];
                         a_store =[a_store;theta1(k/N+1:end)];
                         L(iv,1:iv-1) = theta1(k/N+1:end)';
                     end
                 end
 
                 % Convert structural parameters to reduce form parameters
-                beta_store_mat_i = reshape(beta_store,K,N)';
+                beta_store_mat_i = reshape(theta_store,K,N)';
                 if contains(prior_type,'ssp','ignorecase',true)
                     beta_store_mat = [L\beta_store_mat_i(:,1:N) L\beta_store_mat_i(:,N+1:2*N)]';
                 else
@@ -601,7 +600,7 @@ for vint_ii = 1:no_of_samples
                     beta_store_mat = beta_store_mat';
                 end
 
-                beta_store_structural = beta_store;
+                beta_store_structural = theta_store;
                 beta_store=beta_store_mat(:);
 
                 % DL: Dirichlet-Laplace
@@ -675,33 +674,40 @@ for vint_ii = 1:no_of_samples
                         jj=jj+N;
                     end
                     D = [ones(T,1) -ones(T,p)];
+
+                    % % TVSS a la Louzis (2019)
+                    % y_KF = Y1';
+                    % R_KF = [];
+                    % for tt = 1:T
+                    %     R_KF(:,:,tt)=inv(L'*diag(exp(rowextract(-h,tt)))*L);
+                    % end
+                    % Z_KF = kron(eye(N),[ones(1,1) -ones(1,p)])*U;
+                    % Q_KF=0.0001*eye(N);
+                    % a1=M0;
+                    % P1=0.0001*eye(N);
+                    % MUt = KF_CKsimSV(y_KF,Z_KF,R_KF,Q_KF,a1,P1);
+
                     if contains(prior_type,'stvol','ignorecase',true)
-                        sigma_1                     = (L\eyeN)*diag(exp(rowextract(h,1)))*(L\eyeN)';
-                        invSigma_1                  = sigma_1\eyeN;
-                        Sum_DD_invSigma             = kron(D'*D,invSigma_1);
-                        vec_Sum_invSigma_Y1_D       = vec(invSigma_1*Y1'*D);
+                        tt                          = 1;
+                        invSigma_tt                 = L'*diag(exp(rowextract(-h,tt)))*L;
+                        Sum_DD_invSigma             = kron(D(tt,:)'*D(tt,:),invSigma_tt);
+                        vec_Sum_invSigma_Y1_D       = vec(invSigma_tt*Y1(tt,:)'*D(tt,:));
                         for tt = 2:T
-                            sigma_1                 = (L\eyeN)*diag(exp(rowextract(h,1)))*(L\eyeN)';
-                            invSigma_tt             = sigma_1\eyeN;
-                            %                                 invSigma_tt             = L'*diag(exp(rowextract(-h,tt)))*L;
-                            Sum_DD_invSigma         = Sum_DD_invSigma + kron(D'*D,invSigma_tt);
-                            vec_Sum_invSigma_Y1_D   = vec_Sum_invSigma_Y1_D + vec(invSigma_tt*Y1'*D);
+                            % sigma_tt                 = (L\eyeN)*diag(exp(rowextract(h,tt)))*(L\eyeN)';
+                            % invSigma_tt             = sigma_tt\eyeN;
+                            invSigma_tt             = L'*diag(exp(rowextract(-h,tt)))*L;
+                            Sum_DD_invSigma         = Sum_DD_invSigma + kron(D(tt,:)'*D(tt,:),invSigma_tt);
+                            vec_Sum_invSigma_Y1_D   = vec_Sum_invSigma_Y1_D + vec(invSigma_tt*Y1(tt,:)'*D(tt,:));
                         end
                         Vstar                       = (invV0 + U'*Sum_DD_invSigma*U)\eyeN;
                         MUstar                      = Vstar*(invV0*M0 + U'*vec_Sum_invSigma_Y1_D);
-                        MU                          = MUstar + (randn(1,N)*chol(Vstar + 1e-13*eye(size(Vstar))))';
+                        MU                          = MUstar + (randn(1,N)*chol(Vstar + 1e-6*eye(size(Vstar))))';
                     else
                         sigma_1                     = (L\eyeN)*diag(Sig)*(L\eyeN)';
                         invSigma                    = sigma_1\eyeN;
                         Vstar                       = (invV0 + U'*kron(D'*D,invSigma)*U)\eyeN;
                         MUstar                      = Vstar*(invV0*M0+U'*vec(invSigma*Y1'*D));
-                        MU                          = MUstar + (randn(1,N)*chol(Vstar + 1e-13*eye(size(Vstar))))';
-                    end
-
-                    if contains(prior_type,'srp','ignorecase',true)
-                        % Bound MU to the ELB
-                        ndxMUshadow=(MU(ndxSHADOWRATE)<ELBbound');
-                        MU(ndxSHADOWRATE)=ELBbound'.*ndxMUshadow + MU(ndxSHADOWRATE).*(1-ndxMUshadow);
+                        MU                          = MUstar + (randn(1,N)*chol(Vstar + 1e-6*eye(size(Vstar))))';
                     end
 
                     if SSPssvs == 1
@@ -728,6 +734,10 @@ for vint_ii = 1:no_of_samples
                     F_comp = [beta_store_mat(2:end,:)' ; [eye(N*(p-1)),zeros(N*(p-1),N)]];
                     if max(abs(eig(F_comp)))>1
                         stationarity = 0;
+                        % summm=summm+1;
+                        % if mod(summm,100)==0
+                        %     summm
+                        % end
                     else
                         stationarity = 1;
                     end
@@ -1053,7 +1063,7 @@ for vint_ii = 1:no_of_samples
     end
 
     if contains(prior_type,'ssp','ignorecase',true)
-        MU_all_samples{vint_i,1}  = prctile(store_MU,[10 50 90],1)';
+        MU_all_samples{vint_i,1}  = prctile(store_MU,[32 50 68],1)';
     end
 
     if contains(prior_type,'stvol','ignorecase',true)

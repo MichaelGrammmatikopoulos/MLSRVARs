@@ -3,7 +3,7 @@ all_models_pretty = cellstr(all_models)';
 for m_i = 1:size(all_models,2)
 
     if contains(all_models_pretty{m_i},'minnesota','ignorecase',true)
-        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"minnesota","Min.");
+        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"minnesota","Minnesota");
     end
 
     if contains(all_models_pretty{m_i},'_stvol','ignorecase',true)
@@ -11,7 +11,7 @@ for m_i = 1:size(all_models,2)
     end
 
     if contains(all_models_pretty{m_i},'_ssp','ignorecase',true)
-        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"_ssp","-SSP");
+        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"_ssp","-VSLR");
     end
 
     if contains(all_models_pretty{m_i},'_srp','ignorecase',true)
@@ -23,7 +23,7 @@ for m_i = 1:size(all_models,2)
     end
 
     if contains(all_models_pretty{m_i},'blasso_G','ignorecase',true)
-        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"blasso_G","Global BLASSO");
+        all_models_pretty{m_i} = strrep(all_models_pretty{m_i},"blasso_G","BLASSO(G)");
     end
 
     if contains(all_models_pretty{m_i},'DirLap','ignorecase',true)

@@ -12,7 +12,6 @@ function GW = CPAtest(loss1,loss2,tau, alpha, choice)
 %
 % Raffaella Giacomini, 2003
 
-
 lossdiff1=loss1-loss2;                                                     % loss diferential 
 
 TT = size(lossdiff1,1);
@@ -30,26 +29,26 @@ else
 end      
 
 % create the regressor matrix given by lossdiff*ht', where ht is the matrix of instruments
-reg = -999*ones(size(instruments));
+reg2 = -999*ones(size(instruments));
 for jj = 1:size(instruments,2)
-   reg(:,jj) = instruments(:,jj).*lossdiff;
+   reg2(:,jj) = instruments(:,jj).*lossdiff;
 end
 
 if tau == 1
    % calculate the test stat as nR^2 from the regression of one on lossdiff*ht
-   res.beta = reg\ones(T,1);   
-   err = ones(T,1)-reg*res.beta;
+   res.beta = reg2\ones(T,1);   
+   err = ones(T,1)-reg2*res.beta;
    r2 = 1-mean(err.^2);
    teststat = T*r2;
-   q = size(reg,2);
+   q = size(reg2,2);
    critval = chi2inv(1-alpha,q);
    pval = 1 - cdf('chi2',abs(teststat),q);
 else
-   zbar = mean(reg)';
+   zbar = mean(reg2)';
    nlags = tau-1;
-   omega = NeweyWest(reg,nlags);
+   omega = NeweyWest(reg2,nlags);
    teststat = T*zbar'*inv(omega)*zbar;
-   q = size(reg,2);
+   q = size(reg2,2);
    critval = chi2inv(1-alpha,q);
    pval = 1 - cdf('chi2',abs(teststat),q);
 end

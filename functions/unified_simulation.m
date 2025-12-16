@@ -1,16 +1,16 @@
 
 %% If the model has stochastic volatility sample from here
 if contains(prior_type,'stvol','ignorecase',true) %#ok<STRIFCND>
+    
     %% sample theta
     expinvh     = sparse(1:T,1:T,exp(-h(:,ii)),T,T);
+    Ktheta      = invVtheta{ii,1} + zt'*expinvh*zt + 1e-6*eye(size(invVtheta{ii,1})); 
+    thetahat    = Ktheta\(invVtheta{ii,1}*theta0{ii,1}+zt'*expinvh*Y(:,ii));
+    theta{ii,1} = thetahat + chol(Ktheta,'lower')'\randn(size(Ktheta,1),1);
 
-    % Ktheta      = invVtheta{ii,1} + zt'*expinvh*zt  
-    % thetahat    = Ktheta\(invVtheta{ii,1}*theta0{ii,1}+zt'*expinvh*Y(:,ii));
-    % theta{ii,1} = thetahat + chol(Ktheta,'lower')'\randn(size(Ktheta,1),1);
-
-    Ktheta      = nearestSPD(invVtheta{ii,1} + zt'*expinvh*zt + 10^-6*eye(size(invVtheta{ii,1}))); % 
-    thetahat    = pinv(Ktheta)*(invVtheta{ii,1}*theta0{ii,1}+zt'*expinvh*Y(:,ii));
-    theta{ii,1} = thetahat + pinv(chol(Ktheta,'lower'))'*randn(size(Ktheta,1),1);
+    % Ktheta      = nearestSPD(invVtheta{ii,1} + zt'*expinvh*zt + 10^-6*eye(size(invVtheta{ii,1}))); % 
+    % thetahat    = pinv(Ktheta)*(invVtheta{ii,1}*theta0{ii,1}+zt'*expinvh*Y(:,ii));
+    % theta{ii,1} = thetahat + pinv(chol(Ktheta,'lower'))'*randn(size(Ktheta,1),1);
 
     %% sample h
     e       = Y(:,ii) - zt*theta{ii,1};
@@ -24,28 +24,31 @@ if contains(prior_type,'stvol','ignorecase',true) %#ok<STRIFCND>
 
     %% sample Sigh
     eh                  = h(:,ii)- [h0(ii);h(1:T-1,ii)];
-    Sigh(ii)            = 1./gamrnd(nu0+T/2, 1./(S0h + sum(eh.^2)'/2));
-    if Sigh(ii)<10^-6
-        Sigh(ii)
-        Sigh(ii) = 10^-6;
-    end
-    id_heteroskedastic  = 1;
+    Sigh(ii)            = 1./gamrnd(nu0h+T/2, 1./(S0h + sum(eh.^2)'/2));
+    % if Sigh(ii)<10^-6
+    %     Sigh(ii)
+    %     Sigh(ii) = 10^-6;
+    % end
 
 else % For the homoskedasticity assumption sample from here
-    % sample theta
-    Ktheta      = nearestSPD(invVtheta{ii,1} + zt'*zt./Sig(ii) + 10^-6*eye(size(invVtheta{ii,1}))); %+ 1e-6*eye(size(invVtheta{ii,1}));
-   thetahat    = Ktheta\(invVtheta{ii,1}*theta0{ii,1}+zt'*Y(:,ii)./Sig(ii));
-    % thetahat    = pinv(Ktheta)*(invVtheta{ii,1}*theta0{ii,1}+zt'*Y(:,ii)./Sig(ii));
+    
+    %% sample theta
+    Ktheta      = invVtheta{ii,1} + zt'*zt./Sig(ii) + 1e-6*eye(size(invVtheta{ii,1}));    
+    thetahat    = Ktheta\(invVtheta{ii,1}*theta0{ii,1}+zt'*Y(:,ii)./Sig(ii));
     theta{ii,1} = thetahat + chol(Ktheta,'lower')'\randn(size(Ktheta,1),1);
+    
+    % Ktheta      = nearestSPD(invVtheta{ii,1} + zt'*zt./Sig(ii)+ 10^-6*eye(size(invVtheta{ii,1}))); %+ 10^-6*eye(size(invVtheta{ii,1}))); %+ 1e-6*eye(size(invVtheta{ii,1}));    
+    % thetahat    = pinv(Ktheta)*(invVtheta{ii,1}*theta0{ii,1}+zt'*Y(:,ii)./Sig(ii));
     % theta{ii,1} = thetahat + pinv(chol(Ktheta,'lower'))'*randn(size(Ktheta,1),1);
-    % sample Sig
+
+    %% sample Sig
     e                = Y(:,ii) - zt*theta{ii,1};
     Sig(ii)          = 1./gamrnd(nu0+T/2, 1./(S0 + sum(e.^2)/2));
-    if Sig(ii)<10^-6
-        Sigh(ii)
-        Sig(ii) = 10^-6;
-    end
-    id_Homoskedastic = 1;
+    % if Sig(ii)<10^-6
+    %     Sigh(ii)
+    %     Sig(ii) = 10^-6;
+    % end
+   
 end
 
 %% Machine Learning Priors for the coefficients
@@ -60,10 +63,12 @@ if contains(prior_type,'blasso','ignorecase',true) %#ok<STRIFCND>
         % tau
         Stau                      = sqrt(lambda{ii,1}./(theta{ii,1}.^2));
         invtau                    = random('inversegaussian',Stau,lambda{ii,1});
-        % invtau (isnan( invtau  )) = 10^-6;
+        
+        invtau (isnan( invtau  )) = 10^-6;
         invtau(isnan(invtau)|(invtau<=0)) = 10^-6; 
         invtau(sign(invtau).*isinf(invtau)<0) = 10^-6;
         invtau(sign(invtau).*isinf(invtau)>0) = 10^6;
+        
         tau{ii,1}                 = 1./invtau;
         invVtheta{ii,1}           = (diag(invtau));
 
@@ -76,7 +81,7 @@ if contains(prior_type,'blasso','ignorecase',true) %#ok<STRIFCND>
         lambda_c{ii,1}              = gamrnd(a0_c+1, 1./(0.5*(tau_c{ii})+b0_c));
         lambda_L{ii,1}              = gamrnd(a0_L+1, 1./(0.5*(tau_L{ii})+b0_L));
         lambda{ii,1}                = [lambda_c{ii,1};lambda_L{ii,1}];
-
+% lambda{ii,1};
         % tau
         Stau_c                          = sqrt(lambda_c{ii,1}./((theta{ii,1}(1:no_of_regression_coef,:)).^2));
         Stau_L                          = sqrt(lambda_L{ii,1}./((theta{ii,1}(no_of_regression_coef+1:end,:)).^2));

@@ -1,148 +1,15 @@
-function  [table_graph_results] = create_tables(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH,all_models_pretty, pretty_names, var_mnemonic_i, ...
+function  [graph_results] = create_graphs(naming,irf_forecast_horizon,no_of_models,draw_GIRFs, ndxBENCH,all_models_pretty, pretty_names, var_mnemonic_i, ...
     tcode, minnesotaPriorMean, which_VAR, results, ...
     tables_dir, GIRFs_dir, shadow_rates_graphs_dir, volatilities_dir, forecast_fancharts, CHOOSE_VAR,...
     IRFPlus_tails_all_models_samples, IRFMinus_tails_all_models_samples, vintages_to_run, mnemonics_for_girfs, ...
     all_models, Yraw_table_last_vintage, shadowrateTails_all_models_samples, ...
-    FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, ...
+    FPActuals_irf, ndxMODEL, fcstYdraws_all_models_samples, yforecast_all_models_samples,...
     post_h_all_models_samples, no_of_samples, spf_dataset_SSP, SSP_id, MU_all_models_samples,forecast_horizon_set,WUXIAshadow2, ...
-    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs, produce_tables, filter_variables)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%           TABLES             %%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-pretty_names_short = char(var_mnemonic_i);
-pretty_names_short = string((pretty_names_short(:,1:3,:)));
-make_strings_for_graphs
-
-% all_models_pretty = strrep(all_models_pretty,"SV","Stochastic Volatility");
-% all_models_pretty = strrep(all_models_pretty,"SR","Shadow Rate");
-% all_models_pretty = strrep(all_models_pretty,"SSP","Steady State");
-% all_models_pretty = strrep(all_models_pretty,"SStochastic VolatilityS","SSVS");
-% all_models_pretty = strrep(all_models_pretty,"SSVS","Stochastic Search Variable Selection");
-all_latex_tables=struct();
-if produce_tables == 1
-    table_list_of_variables = table(string(pretty_names'), string(var_mnemonic_i'), string(pretty_names_short'), string(string(tcode')), string(string(minnesotaPriorMean)));
-    table_list_of_variables = renamevars(table_list_of_variables,["Var1","Var2","Var3","Var4","Var5"],["Variable","ALFRED code", "Table mnemonic","Transformation code","Minnesota Prior"]);
-    title_ = 'List of Variables';
-    subtitle_ = ['Note: Data gathered from the ALFRED-MD. Includes vintages from 2008Q1 to 2019Q4. The transformations legend is the following: 6: ' ...
-        'log second differences, 5: log differences, 4: log transformation, 3: second differences, 2: first differences, 1: no transformation. ' ...
-        'The Table mnemonic is the shortened name of the variable as used in the results table, while the Minnesota prior column denotes whether ' ...
-        'shrinkage of the variable coefficient is towards zero or towards 1 (random walk).'];
-    
-    filename = char([tables_dir+'table_list_of_variables2.tex']);
-    
-    % Open the file for writing
-    fileID = fopen(filename, 'w');
-    
-    % Write the LaTeX table header
-    fprintf(fileID, '\\begin{table}[h!]\n');
-    fprintf(fileID, '\\centering\n');
-    fprintf(fileID, '\\begin{tabular}{|l|l|l|c|c|}\n');
-    fprintf(fileID, '\\hline\n');
-    fprintf(fileID, 'Variable & ALFRED code & Table mnemonic & Transformation code & Minnesota Prior \\\\ \\hline\n');
-    
-    % Write the table data
-    for i = 1:height(table_list_of_variables)
-        fprintf(fileID, '%s & %s & %s & %.2f & %.2f \\\\ \\hline\n', ...
-            table_list_of_variables.Variable{i}, ...
-            table_list_of_variables.('ALFRED code'){i}, ...
-            table_list_of_variables.('Table mnemonic'){i}, ...
-            table_list_of_variables.('Transformation code')(i), ...
-            table_list_of_variables.('Minnesota Prior')(i));
-    end
-    
-    % Write the LaTeX table footer
-    fprintf(fileID, '\\end{tabular}\n');
-    fprintf(fileID, '\\caption{List of Variables}\n');
-    fprintf(fileID, '\\label{tab:variables}\n');
-    fprintf(fileID, '\\end{table}\n');
-    
-    % Close the file
-    fclose(fileID);
-    
-    format bank
-    % ndxMAINVARS = find(ismember(var_mnemonic, {'GDP','UNRATE','CPIAUCSL','FEDFUNDS'}));
-    table_graph_results=struct();
-    subtitle_=[append('Note: Comparison with the ', all_models_pretty(ndxBENCH), [' model (baseline in denominator) against different specifications. ' ...
-                'Values below 1 indicate improvement over baseline. Evaluation windows with forecast origins from 2007Q1 through 2019:Q3. ' ...
-                'Real time vintages, from the ALFRED database. Significance is assessed by the Giacomini-White test using Newey-West standard errors. ' ...
-                'Legend: SV: Stochastic Volatility, SSP: Steady State, SR: Shadow Rate. Highlighted with cyan color are the shadow rate model specifications. ' ...
-                'Stars represent the GW test for the rejection of the hypothesis H0: "no significant difference between the forecast of model j vs benchmark", for the 10\% (*), 5\% (**) and 1\% (***) significance level.'])];
-        
-    fieldNames  = {'h'+string(forecast_horizon_set(1)), 'h'+string(forecast_horizon_set(2)), 'h'+string(forecast_horizon_set(3))};
-    subsamples  = {'','_09q1_15q4','_16q1_19q4'};
-    scores      = {'RMSE','MAE', 'CRPS'};
-    for score_i = scores 
-        for subsample_i = subsamples
-            for horizon_i = 1:length(forecast_horizon_set)
-               
-                score_string = append('r',score_i,'s');
-                if string(score_i)=="CRPS"
-                    score_string=strrep(score_string,'s','');
-                end
-                % score table
-                table_rSCOREs = string(sprintfc('%0.2f', results.(string(fieldNames(horizon_i))).(string(append(score_string,subsample_i))) ));
-                ndx_asterisks = results.(string(fieldNames(horizon_i))).(string(append(score_string,subsample_i)))<1;
-                asterisks_rSCOREs = string([ndx_asterisks.*results.(string(fieldNames(horizon_i))).(string(append('GWtests_all_models_',score_i,subsample_i)))]);
-                asterisks_rSCOREs = strrep(asterisks_rSCOREs,'0','');
-                asterisks_rSCOREs = strrep(asterisks_rSCOREs,'1','*');
-                asterisks_rSCOREs = strrep(asterisks_rSCOREs,'2','**');
-                asterisks_rSCOREs = strrep(asterisks_rSCOREs,'3','***');
-                table_rSCOREs = cellstr(append(table_rSCOREs,asterisks_rSCOREs));
-                table_rSCOREs_final = array2table([cellstr(all_models_pretty) table_rSCOREs]);
-                table_rSCOREs_final.Properties.VariableNames = ["Model" pretty_names_short];
-                table_rSCOREs_final(ndxBENCH,:)=[];
-                
-                table_rSCOREs_final2_hor{horizon_i} = table_rSCOREs_final(:,[1 filter_variables+1]);
-                table_rSCOREs_final2_hor{horizon_i}.Properties.VariableNames = append(string(table_rSCOREs_final2_hor{horizon_i}.Properties.VariableNames), string(fieldNames(horizon_i)));
-                table_rSCOREs_final2_hor{horizon_i}.Properties.VariableNames(1)="Model";
-            end
-            counterr=1;
-            finalTable=[];
-            for var_ii=2:length(table_rSCOREs_final2_hor{1}.Properties.VariableNames)
-                % Combine the tables using outer join
-                T_combined = outerjoin(table_rSCOREs_final2_hor{1}(:,[1 var_ii]), table_rSCOREs_final2_hor{2}(:,[1 var_ii]), 'MergeKeys', true);
-                T_combined = outerjoin(T_combined, table_rSCOREs_final2_hor{3}(:,[1 var_ii]), 'MergeKeys', true);
-        
-                % Create the final table with 'model' and 'gdp' as subcolumns
-                finalTables{counterr} = [T_combined.Model, T_combined(:,2:4)];
-                % finalTables{counterr} = table(T_combined.Model, ...
-                %     [table2array(T_combined(:,2:4))], ...
-                %     'VariableNames', {'Model', char(T_combined.Properties.VariableNames(2))});
-                % 
-                if counterr ~= 1
-                    finalTable=outerjoin(finalTable,finalTables{counterr}, 'MergeKeys', true);
-                else
-                    finalTable=finalTables{counterr};
-                end
-    
-                counterr=counterr+1;
-                
-            end
-    % finalTable.Properties.VariableNames=strrep(finalTable.Properties.VariableNames,char(fieldNames{1}),'');
-    finalTable.Properties.VariableNames(1)={'Model'};
-            [~, idx] = ismember(table_rSCOREs_final2_hor{horizon_i}.Model, finalTable.Model);
-            finalTable = finalTable(idx, :);
-    
-            title_=append(score_i, ' forecast performance vs. , ', all_models_pretty(ndxBENCH), '-VAR, ', char(strrep(strrep(subsample_i,'_',' 20'),'q',' Q')));
-            
-            latex_file_i = table2latex3(finalTable,convertStringsToChars(append(char(tables_dir),'bnch',all_models_pretty(ndxBENCH),string(subsample_i),'_table_r',score_i,'s')),title_,subtitle_,1,all_models_pretty);
-      
-            table_graph_results.(string(append(score_string,subsample_i))) = finalTable;
-
-            all_latex_tables.(string(append(score_string,subsample_i)))=latex_file_i;
-        end
-        
-    end
-
-    table_graph_results.all_latex_tables =all_latex_tables;
-end
+    produce_SR_graphs, produce_IRFs_graphs, produce_SV_graphs, produce_FAN_graphs, filter_variables)
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%           GRAPHS             %%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 fontsize = 12;
 colorPlus     = Colors4Plots(1);
 colorMinus    = Colors4Plots(2);
@@ -151,8 +18,6 @@ colorPlus_vint1     = Colors4Plots(1);
 colorMinus_vint1    = Colors4Plots(2);
 colorPlus_vint2     = Colors4Plots(2);
 colorMinus_vint2    = Colors4Plots(1);
-
-
 
 if draw_GIRFs == 1 && produce_IRFs_graphs == 1
 
@@ -185,7 +50,7 @@ if draw_GIRFs == 1 && produce_IRFs_graphs == 1
         % mkdir(cd,'results')
 
         %  for model_i=1:18
-        thisfig_plus = figure;
+        thisfig_plus = figure('Visible', 'off');
         sgtitle(all_models_pretty(model_i));
 
         for n = 1:length(figure_varlist)
@@ -274,7 +139,7 @@ if draw_GIRFs == 1 && produce_IRFs_graphs == 1
         % mkdir(cd,'results')
 
         %  for model_i=1:18
-        thisfig_plus = figure;
+        thisfig_plus = figure('Visible', 'off');
         sgtitle(all_models_pretty(model_i));
 
         for n = 1:length(figure_varlist)
@@ -358,7 +223,7 @@ end
     
             if contains(all_models(mm_i),'srp','ignorecase',true)
                 thisfig_shadow = figure;
-                sgtitle(append(title_VAR,' - ',"Shadow Rate estimates for model: ", all_models_pretty(mm_i)));
+                sgtitle(append("Shadow Rate estimates for model: ", all_models_pretty(mm_i)));
     
                 subplot(1,2,1);
     
@@ -438,24 +303,26 @@ end
                 set(gcf, 'Color', 'w')
                 export_fig(file_name, '-png', '-a1', '-native','-r300')
     
-                idx_sh = sh_gr(:,1)<=0.25;
-                corr_tbl(mm_i,2) = table(corr(sh_gr(idx_sh,3),wu_xia_part_gr(idx_sh)));
-                corr_tbl(mm_i,3) = table(min(sh_gr(idx_sh,3)));
-                corr_tbl(mm_i,4) = table(mean(sh_gr(idx_sh,3)));
-                corr_tbl(mm_i,5) = table(std(sh_gr(idx_sh,3)));
+                idx_sh = (sh_gr(:,1)<=0.25);
+                corr_tbl(mm_i,2) = table(compose(string(corr(sh_gr(idx_sh,3),wu_xia_part_gr(idx_sh)))));
+                corr_tbl(mm_i,3) = table(compose(string(min(sh_gr(idx_sh,3)))));
+                corr_tbl(mm_i,4) = table(compose(string(mean(sh_gr(idx_sh,3)))));
+                corr_tbl(mm_i,5) = table(compose(string(std(sh_gr(idx_sh,3)))));
     
             end
     
         end
-                corr_tbl(mm_i+1,2) = table(1); 
-                corr_tbl(mm_i+1,3) = table(min(wu_xia_part_gr(idx_sh))); 
-                corr_tbl(mm_i+1,4) = table(mean(wu_xia_part_gr(idx_sh)));
-                corr_tbl(mm_i+1,5) = table(std(wu_xia_part_gr(idx_sh)));
-                corr_tbl(mm_i+1,6) = table(1); 
-                corr_tbl(mm_i+1,7) = table(min(wu_xia_part_gr(idx_sh))); 
-                corr_tbl(mm_i+1,8) = table(mean(wu_xia_part_gr(idx_sh)));
-                corr_tbl(mm_i+1,9) = table(std(wu_xia_part_gr(idx_sh)));
-                table_graph_results.corr_tbl = corr_tbl;
+                corr_tbl(mm_i+1,2) = table(compose(string(1))); 
+                corr_tbl(mm_i+1,3) = table(compose(string(min(wu_xia_part_gr(idx_sh))))); 
+                corr_tbl(mm_i+1,4) = table(compose(string(mean(wu_xia_part_gr(idx_sh)))));
+                corr_tbl(mm_i+1,5) = table(compose(string(std(wu_xia_part_gr(idx_sh)))));
+                corr_tbl(mm_i+1,6) = table(compose(string(1))); 
+                corr_tbl(mm_i+1,7) = table(compose(string(min(wu_xia_part_gr(idx_sh))))); 
+                corr_tbl(mm_i+1,8) = table(compose(string(mean(wu_xia_part_gr(idx_sh)))));
+                corr_tbl(mm_i+1,9) = table(compose(string(std(wu_xia_part_gr(idx_sh)))));
+                graph_results.corr_tbl = corr_tbl;
+    else
+        graph_results = [];
     end
      
 
@@ -528,7 +395,7 @@ end
                 end
             end
     
-            file_name = append(char(forecast_fancharts), char(append(which_VAR, '_', 'forecast_fancharts_', all_models_pretty(mmm_i))));
+            file_name = append(char(forecast_fancharts), char(append('forecast_fancharts_', all_models_pretty(mmm_i))));
             %         print(append(char(forecast_fancharts), char(append(which_VAR, '_', 'forecast_fancharts_', all_models_pretty(mmm_i)))), '-dpng');
             set(gcf, 'Color', 'w')
             export_fig(file_name, '-png', '-a1', '-native','-r300')
@@ -558,7 +425,7 @@ end
     
                 figure_pretty_names = [pretty_names(figure_varlist)];
     
-                this_figure_volatility_chart=figure;
+                this_figure_volatility_chart=figure('Visible', 'off');
                 for n = 1:length(figure_varlist)
     
                     var_i=figure_varlist(n);
@@ -605,53 +472,101 @@ end
         end
     end
     
-    % for mmm_i= no_of_models:no_of_models
-    %     if contains(all_models(mmm_i),'_ssp','ignorecase',true)
-    %         for var_i = 1:21;
+
+    % Forecast plots
+    model_set = [2 17];
+    if length(all_models_pretty)==9
+        model_set = [1 9];
+    end
+    for mmm_i = model_set
+        for var_i = [1 2 13]
+
+            fcsts=cell2mat(cellfun(@(M) M(var_i,:), yforecast_all_models_samples{mmm_i}, 'UniformOutput', false));
+            num_obs = size(fcsts,1);
+            obs_data = FPActuals_irf(:,var_i);
+
+            steps = [0, 1, 4, 8, 12, 16];
+            num_fcasts = size(fcsts,1);
+
+            fcast_vals = zeros(num_fcasts, length(steps));
+            start_pts = zeros(num_fcasts, 1);
+
+            for i = 1:num_fcasts
+                start_pts(i) = 1 * (i - 1) + 1;
+                fcast_vals(i, :) = [obs_data(i) fcsts(i,:)];
+            end
+            soft_black = [0.2 0.2 0.2]; % Adjust RGB values for desired shade
+
+            figure;
+            hold on;
+            plot(1:num_obs, obs_data, 'b-');
+            colors = lines(num_fcasts);
+
+            for i = 1:num_fcasts
+                plot(start_pts(i) + steps, fcast_vals(i, :), '--', 'Color', soft_black);
+            end
+            hold off;
+
+        end
+    end
+
     % 
-    %             ssp_prior_dt = (table2array(spf_dataset_SSP(:,1+ndxMODEL))'.*SSP_id)';
-    % 
-    %             thisfig_ssp = figure;
-    %             sgtitle(append(title_VAR,' - ',"SSP estimates for model: ", var_mnemonic_i(var_i),all_models_pretty(mmm_i)));
-    % 
-    %             %         subplot(2,2,1);
-    % 
-    %             hold on
-    % 
-    %             % real time SSP
-    %             rt_ssp =[];
-    % 
-    %             %             ssp_int=reshape(MU_all_models_samples(var_i,:,:,model_i),3,no_of_samples)';
-    %             ssp_int=cell2mat(cellfun(@(M) M(var_i,:), MU_all_models_samples{mmm_i}, 'UniformOutput', false));
-    % 
-    %             FPActuals_irf2=FPActuals_irf(:,ndxMODEL);
-    %             ssp_part_gr = ssp_int;
-    %             historical = FPActuals_irf2(:,var_i);
-    % 
-    %             start_of_graph="2008 Q2";
-    %             end_of_graph="2019 Q4";
-    %             start_of_graph_num = str2double(extractBetween( start_of_graph , 1 , 4 ));
-    % 
-    %             dn=datenum(start_of_graph_num,1+[0:3:12*(2020-start_of_graph_num)].',1);  % make a sample time vector
-    %             dn=dn(1:end-2);
-    % 
-    %             actuals=plot(dn,historical(:,1),'-', 'color', colorPlus_vint1, 'linewidth', 2);
-    %             ssp_gr_bands=plot(dn,ssp_part_gr(:,2),'-', 'color', colorPlus_vint2, 'linewidth', 2);
-    %             plot(dn, squeeze(ssp_part_gr(:,[1,3])), '-.', 'color', colorPlus_vint2, 'linewidth', 1);
-    %             ssp_prior_gr=plot(dn, ssp_prior_dt(:,var_i), '-.', 'color', "black", 'linewidth', 2);
-    % 
-    %             datetick('x','YYYYQQ');        % format axes as time
-    %             xlim([dn(1) dn(end)]);          % fit axes to range of actual data
-    %             lgd = legend([ssp_prior_gr ssp_gr_bands actuals ], ["Prior (SPF)","Posterior estimates","Actuals (first prints)"],'Location','northeast');
-    % 
-    %             %         pos = get(thisfig_shadow, 'Position');
-    %             %         set(thisfig_shadow, 'Position',pos+[-100 -100 750 100]);
-    % 
-    % 
-    %             %                 print(append(char(ssp_graphs_dir), char(append(which_VAR, '_', 'volatilities_', all_models_pretty(mmm_i)))), '-dpng');
-    % 
-    %         end
-    %     end
-    % end
+    for mmm_i= 1:no_of_models
+        if contains(all_models(mmm_i),'_ssp','ignorecase',true)
+            for var_i = 1:20;
 
 
+                ssp_prior_dt = (table2array(spf_dataset_SSP(:,1+ndxMODEL))'.*SSP_id)';
+
+                thisfig_ssp = figure;
+                sgtitle(append(var_mnemonic_i(var_i)," SSP prior and posterior estimates for model: ",all_models_pretty(mmm_i)));
+
+                %         subplot(2,2,1);
+
+                hold on
+
+                % real time SSP
+                rt_ssp =[];
+
+                %             ssp_int=reshape(MU_all_models_samples(var_i,:,:,model_i),3,no_of_samples)';
+                ssp_part_gr=cell2mat(cellfun(@(M) M(var_i,:), MU_all_models_samples{mmm_i}, 'UniformOutput', false));
+
+                % FPActuals_irf2=FPActuals_irf(:,ndxMODEL);
+                % ssp_part_gr = ssp_int;
+                historical = FPActuals_irf(:,var_i);
+
+                start_of_graph="2005 Q2";
+                end_of_graph="2019 Q4";
+                start_of_graph_num = str2double(extractBetween( start_of_graph , 1 , 4 ));
+
+                dn=datenum(start_of_graph_num,1+[0:3:12*(2020-start_of_graph_num)].',1);  % make a sample time vector
+                dn=dn(1:end-2);
+
+                actuals=plot(dn,historical(:,1),'-', 'color', colorPlus_vint1, 'linewidth', 2);
+                ssp_gr_bands=plot(dn,ssp_part_gr(:,2),'-', 'color', colorPlus_vint2, 'linewidth', 2);
+                plot(dn, squeeze(ssp_part_gr(:,[1,3])), '-.', 'color', colorPlus_vint2, 'linewidth', 1);
+                ssp_prior_gr=plot(dn, ssp_prior_dt(:,var_i), '-.', 'color', "black", 'linewidth', 2);
+
+                datetick('x','YYYYQQ');        % format axes as time
+                xlim([dn(1) dn(end)]);          % fit axes to range of actual data
+                lgd = legend([ssp_prior_gr ssp_gr_bands actuals ], ["Prior (SPF)","Posterior estimates","Actuals (first prints)"],'Location','northeast');
+
+                %         pos = get(thisfig_shadow, 'Position');
+                %         set(thisfig_shadow, 'Position',pos+[-100 -100 750 100]);
+
+
+                %                 print(append(char(ssp_graphs_dir), char(append(which_VAR, '_', 'volatilities_', all_models_pretty(mmm_i)))), '-dpng');
+
+            end
+        end
+    end
+
+
+% fontsize = 12;
+% colorPlus     = Colors4Plots(1);
+% colorMinus    = Colors4Plots(2);
+% colorBase     = Colors4Plots(8);
+% colorPlus_vint1     = Colors4Plots(1);
+% colorMinus_vint1    = Colors4Plots(2);
+% colorPlus_vint2     = Colors4Plots(2);
+% colorMinus_vint2    = Colors4Plots(1);

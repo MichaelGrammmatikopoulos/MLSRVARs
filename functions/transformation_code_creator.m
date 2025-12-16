@@ -13,7 +13,7 @@ tcode_full = cell(size(var_mnemonics));
                 tcode_full{n} = 4;
             case {'PSAVERT','CUMFNS','MCUMFN','EXUSUK'}
                 tcode_full{n} = 2;
-            case {'UNRATE',"INFEXP",'FEDFUNDS', 'TB3MS', 'TB6MS', 'GS1', 'GS3', 'GS5', 'GS10', 'BAA', 'GS20'}
+            case {'UNRATE',"PREMIA",'FEDFUNDS', 'TB3MS', 'TB6MS', 'GS1', 'GS3', 'GS5', 'GS10', 'BAA', 'GS20'}
                 tcode_full{n} = 1;
         end % switch
     end % for n

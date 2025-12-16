@@ -7,20 +7,21 @@ for vint_i = 1:no_of_vintages
     Yraw_table = Y_raw_vintages{vint_i,1};
 
     %% Create inflation expectations proxy by using the spread of the 10y and 1y bonds.
-    pos_LR_bond = find(ismember(Yraw_table.Properties.VariableNames,{'GS10'}));
-    pos_SR_bond = find(ismember(Yraw_table.Properties.VariableNames, {'GS1'}));
-    Yraw_table{:,size(Yraw_table,2)+1} = movmean(Yraw_table{:,pos_LR_bond},4)-movmean(Yraw_table{:,pos_SR_bond},4);
-    Yraw_table.Properties.VariableNames{end} = 'INFEXP';
+    % pos_LR_bond = find(ismember(Yraw_table.Properties.VariableNames,{'GS10'}));
+    % pos_SR_bond = find(ismember(Yraw_table.Properties.VariableNames, {'GS1'}));
+    % Yraw_table{:,size(Yraw_table,2)+1} = movmean(Yraw_table{:,pos_LR_bond},4)-movmean(Yraw_table{:,pos_SR_bond},4);
+    % Yraw_table{:,size(Yraw_table,2)+1} = movmean(SPR10Y2Yf(1:size(Yraw_table,1),3),4);
+    % Yraw_table.Properties.VariableNames{end} = 'PREMIA';
 % 
 %     pos_BAA_bond = find(ismember(Yraw_table.Properties.VariableNames,{'BAA'}));
 %     pos_3y_bond = find(ismember(Yraw_table.Properties.VariableNames, {'GS3'}));
 %     Yraw_table{:,size(Yraw_table,2)+1} = movmean(Yraw_table{:,pos_BAA_bond}-Yraw_table{:,pos_3y_bond},4);
-%     Yraw_table.Properties.VariableNames{end} = 'INFEXP2';
+%     Yraw_table.Properties.VariableNames{end} = 'PREMIA2';
 % 
 %     pos_5y_bond = find(ismember(Yraw_table.Properties.VariableNames,{'GS5'}));
 %     pos_3m_bond = find(ismember(Yraw_table.Properties.VariableNames, {'TB3MS'}));
 %     Yraw_table{:,size(Yraw_table,2)+1} = movmean(Yraw_table{:,pos_5y_bond}-Yraw_table{:,pos_3m_bond},4);
-%     Yraw_table.Properties.VariableNames{end} = 'INFEXP3';
+%     Yraw_table.Properties.VariableNames{end} = 'PREMIA3';
 
     % Update teh initial Y_raw
     Y_raw_vintages{vint_i,1} = Yraw_table;
@@ -33,7 +34,7 @@ for vint_i = 1:no_of_vintages
    
     var_mnemonic = ["CPIAUCSL","GDP","UNRATE",...
         "PPIACO","PINCOME","PAYEMS","INDPRO","HOUST","PCECC96","M2SL","MCUMFN",'EXUSUK',...
-        "FEDFUNDS","TB3MS","TB6MS","GS1","GS3","GS5","GS10","BAA","INFEXP"];
+        "FEDFUNDS","TB3MS","TB6MS","GS1","GS3","GS5","GS10","BAA"];
 %     signs = {'<', '<', '>', '<', '<', '<', '<', '<', '<', '<', '<', '<', '>', '>', '>', '>', '>', '>' };
     ydates = Yraw_table.observation;
 
