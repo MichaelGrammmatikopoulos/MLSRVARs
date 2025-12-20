@@ -1,6 +1,10 @@
 ------------------------------------------------------------------------
 MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
+<img width="2042" height="2047" alt="Pi7_cropper(1)" src="https://github.com/user-attachments/assets/fad415a5-c4f2-4bae-be57-c99c04663947" />
+
+------------------------------------------------------------------------
+
 Grammatikopoulos, M. 2025. "Forecasting With Machine Learning 
 Shadow-Rate VARs." Journal of Forecasting 1–17. 
 https://doi.org/10.1002/for.70041. 
