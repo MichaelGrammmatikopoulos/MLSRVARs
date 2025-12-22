@@ -1,3 +1,6 @@
+<!-- PROJECT SHIELDS -->
+[![MATLAB](https://img.shields.io/badge/Made%20with-MATLAB-orange?logo=mathworks&logoColor=white)](https://www.mathworks.com/products/matlab.html)
+
 ------------------------------------------------------------------------
 MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
@@ -54,3 +57,9 @@ D.) **Reproductibility / Computation time**
 
 Replication of the paper results can be done with setting **_ndraws = 15000_**.
 Computational time in an AMD Ryzen 7600 & 32Gb of RAM is approximately 50 hours. 
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[license-shield]: https://img.shields.io/github/license/shawcharles/srvar-toolkit.svg?style=for-the-badge
+[license-url]: https://github.com/shawcharles/srvar-toolkit/blob/main/LICENSE
+[MATLAB-shield]: https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg
+[MATLAB-url]: https://www.mathworks.com/products/matlab.html
