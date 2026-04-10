@@ -2,7 +2,7 @@
 [![MATLAB](https://img.shields.io/badge/Made%20with-MATLAB-orange?logo=mathworks&logoColor=white)](https://www.mathworks.com/products/matlab.html)
 
 ------------------------------------------------------------------------
-MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
+MLSRVARs: MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
 Grammatikopoulos, M.2026. “Forecasting With Machine Learning Shadow-Rate
 VARs.” Journal of Forecasting45, no. 2: 770–786. 
@@ -14,8 +14,8 @@ https://doi.org/10.1002/for.70041.
 ------------------------------------------------------------------------
 The views in this paper are solely of the author. Moody's Analytics is a 
 division within Moody's that is separate from Moody's Ratings. Accordingly
-the viewpoints expressed herein do not reflect those of Moody's Ratings, 
-Moody's Analytics nor the Moody's Corporation as a whole.
+the viewpoints expressed herein do not reflect those of Moody's Ratings or 
+Moody's Analytics, nor the Moody's Corporation as a whole.
 ------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
