@@ -4,8 +4,8 @@
 ------------------------------------------------------------------------
 MLSRVARs : MACHINE LEARNING SHADOW RATE VARs   
 ------------------------------------------------------------------------
-Grammatikopoulos, M. 2025. "Forecasting With Machine Learning 
-Shadow-Rate VARs." Journal of Forecasting 1–17. 
+Grammatikopoulos, M.2026. “Forecasting With Machine Learning Shadow-Rate
+VARs.” Journal of Forecasting45, no. 2: 770–786. 
 https://doi.org/10.1002/for.70041. 
 ------------------------------------------------------------------------
 
